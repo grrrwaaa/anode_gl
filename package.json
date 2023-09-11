@@ -1,0 +1,31 @@
+{
+  "name": "anode_gl",
+  "version": "0.0.1",
+  "description": "native opengl bindings with gles interface",
+  "main": "index.js",
+  "dependencies": {
+    "bindings": "^1.5.0",
+    "gl-matrix": "^3.4.3",
+    "jpeg-js": "^0.4.4",
+    "native-graphics-deps": "0.0.22",
+    "node-addon-api": "^7.0.0",
+    "png-js": "^1.0.0",
+    "pngjs": "^7.0.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "install": "node src/gen.js && node-gyp rebuild"
+  },
+  "gypfile": true,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/grrrwaaa/anode_gl.git"
+  },
+  "author": "Artificial Nature (Graham Wakefield & Haru Ji)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/grrrwaaa/anode_gl/issues"
+  },
+  "homepage": "https://github.com/grrrwaaa/anode_gl#readme"
+}
