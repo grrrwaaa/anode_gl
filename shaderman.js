@@ -4,6 +4,7 @@ const path = require("path"),
 	util = require('util')
 const glutils = require("./glutils.js")
 
+
 class Shaderman extends events.EventEmitter {
 	// shaders contains a list of shaderprograms
 	// indexed by the fragname
@@ -19,6 +20,19 @@ class Shaderman extends events.EventEmitter {
 		super();
 		this.folder = folder
 		this.watch(gl)
+
+		// create a proxy around this.shaders
+		// so that if we try to use "shaderman.shaders.foo" 
+		// it will try to load a shader "foo.vert.glsl"+"foo.frag.glsl" from the shaders folder
+		this.shaders = new Proxy({}, {
+			get: (target, key, receiver) => {
+				// if shader already exists, return it (bypassing proxy):
+				if (target.hasOwnProperty(key)) return Reflect.get(target, key, receiver);
+
+				// else try to load the shader with name "key"
+				return this.create(gl, key, key)
+			}
+		})
 	}
 
 	// create(gl, "test") will load "test.vert.glsl" and "test.frag.glsl"
@@ -106,7 +120,5 @@ class Shaderman extends events.EventEmitter {
 		}
 	}
 }
-
-//util.inherits(Shaderman, events.EventEmitter)
 
 module.exports = Shaderman
