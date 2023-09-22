@@ -82,6 +82,12 @@ class Window {
 	dt = 1/60;
 	frame = 0;
 
+	pointer = {
+		pos: [0.5, 0.5],
+		// up(0) or down(1) for three mouse buttons:
+		buttons: [0, 0, 0]
+	};
+
 	static syncfps = 0;
 	static all = new Set()
 
@@ -140,12 +146,17 @@ class Window {
 
 		glfw.setCursorPosCallback(this.window, (window, px, py) => {
 			let dim = glfw.getWindowSize(window)
+			this.pointer.pos[0] = px/dim[0]
+			this.pointer.pos[1] = px/dim[1]
+
 			if (this.onpointermove) this.onpointermove(2*px/dim[0] - 1, -2*py/dim[1] + 1);
 		})
 		glfw.setMouseButtonCallback(this.window, (window, button, action, mods) => {
 			// button 0: left, 1: right, 2: middle
 			// action 0: up, 1: down
 			// mods is a bitmask for shift, ctrl, alt, win/mac etc.
+			this.pointer.buttons[button] = action
+
 			if (this.onpointerbutton) this.onpointerbutton(button, action, mods)
 		});
 		glfw.setScrollCallback(this.window, (window, dx, dy) => {
