@@ -52,7 +52,6 @@ if (!glfw.init()) {
 	console.log("Failed to initialize GLFW");
 	process.exit(-1);
 }
-ok(gl, "initialized glfw")
 
 let version = glfw.getVersion();
 console.log('glfw ' + version.major + '.' + version.minor + '.' + version.rev);

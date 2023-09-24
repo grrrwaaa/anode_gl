@@ -421,6 +421,7 @@ function createPixelTexture(gl, width, height, floatingpoint=false) {
     floatingpoint =  floatingpoint && (!!gl.getExtension("EXT_color_buffer_float"));
     const channels = 4; // RGBA
 
+
     let tex = {
         id: gl.createTexture(),
         data: null,
@@ -552,7 +553,10 @@ function createPixelTexture(gl, width, height, floatingpoint=false) {
         },
     };
 
-    tex.allocate().bind().submit();
+    tex.allocate()
+    tex.bind()
+    tex.submit();
+    ok(gl, "pixeltex")
 
     // unless we get `OES_texture_float_linear` we can not filter floating point
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
