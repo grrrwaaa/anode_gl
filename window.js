@@ -43,6 +43,8 @@
 // Window.animate()
 
 const gl = require('./gles3.js') 
+const glutils = require('./glutils.js')
+const { ok } = glutils;
 const glfw = require('./glfw3.js')
 
 // once only
@@ -50,6 +52,8 @@ if (!glfw.init()) {
 	console.log("Failed to initialize GLFW");
 	process.exit(-1);
 }
+ok(gl, "initialized glfw")
+
 let version = glfw.getVersion();
 console.log('glfw ' + version.major + '.' + version.minor + '.' + version.rev);
 console.log('glfw version-string: ' + glfw.getVersionString());
@@ -99,7 +103,6 @@ class Window {
 		glfw.windowHint(glfw.CONTEXT_VERSION_MINOR, 3);
 		glfw.windowHint(glfw.OPENGL_FORWARD_COMPAT, 1);
 		glfw.windowHint(glfw.OPENGL_PROFILE, glfw.OPENGL_CORE_PROFILE);
-
 		glfw.windowHint(glfw.SAMPLES, 4);
 
 		let monitors = glfw.getMonitors()
@@ -129,9 +132,9 @@ class Window {
 		// NOTE: per issue https://github.com/glfw/glfw/issues/1267 this should happen *before* makeContextCurrent
 		// but I also seem to need to do it *after* as well
 		glfw.swapInterval(this.sync)
-		glfw.makeContextCurrent(this.window)
+		glfw.makeContextCurrent(this.window)  
 		glfw.swapInterval(this.sync)
-		gl.enable(gl.MULTISAMPLE);  
+		if (options.multisample) gl.enable(gl.MULTISAMPLE);
 
 		console.log(gl.glewInit());
 		//can only be called after window creation!

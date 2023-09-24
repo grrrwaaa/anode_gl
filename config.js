@@ -16,6 +16,8 @@ function Config(filepath, config={}) {
         lasttime = fs.statSync(filepath).mtimeMs
         try {
             Object.assign(config, JSON.parse(fs.readFileSync(filepath)))
+
+            console.log("reloaded", filepath)
         } catch (e) {
             console.error("JSON ERROR", e)
         }
@@ -24,13 +26,11 @@ function Config(filepath, config={}) {
     load()
 
     // now also watch the file:
-    let watcher = fs.watch(path, (eventType, filename) => {
+    let watcher = fs.watch(filepath, (eventType, filename) => {
         if (fs.statSync(filepath).mtimeMs > lasttime) load()
     })
 
     return config
 }
 
-module.exports = {
-    Config
-}
+module.exports = Config

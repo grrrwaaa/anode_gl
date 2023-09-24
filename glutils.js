@@ -1,7 +1,7 @@
 const assert = require("assert")
 const path = require("path")
 const fs = require("fs")
-const {EOL} = require('os');
+//const {EOL} = require('os');
 const { vec2, vec3, vec4, quat, mat2, mat2d, mat3, mat4} = require("gl-matrix")
 
 function ok(gl, msg="gl not ok: ") {
