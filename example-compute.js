@@ -5,7 +5,10 @@ const gl = require('gles3.js'),
 	glutils = require('glutils.js'),
 	Shaderman = require('shaderman.js')
 
-let window = new Window({})
+let window = new Window({
+	CONTEXT_VERSION_MAJOR: 4, // need gl 4.3 for compute shaders
+	CONTEXT_VERSION_MINOR: 3,
+})
 const shaderman = new Shaderman(gl)
 const quad_vao = glutils.createVao(gl, glutils.makeQuad())
 
@@ -45,7 +48,7 @@ layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
 // a 2D image (a single layer of a texture) 
 // compute shaders use pixel coordinates, not normalized coordinates
 // the internal format must match the texture
-layout(rgba32f, binding = 0) uniform image2D imgOutput;
+layout(rgba32f, binding = 0) writeonly uniform image2D imgOutput;
 
 // variables
 uniform float t; 
