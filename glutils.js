@@ -102,6 +102,44 @@ function makeProgram(gl, vertexCode, fragmentCode, name="") {
 	}
 }
 
+function createComputeProgram(gl, computeShader) {
+    let program = gl.createProgram();
+    gl.attachShader(program, computeShader);
+    gl.linkProgram(program);
+    let success = gl.getProgramParameter(program, gl.LINK_STATUS);
+    if (success) {
+        return program;
+    }
+    console.error("shader program error", gl.getProgramInfoLog(program));  
+    gl.deleteProgram(program);
+    return undefined;
+}
+
+function makeComputeProgram(gl, source, name="") {
+	let shader = createShader(gl, gl.COMPUTE_SHADER, source, name)
+	let program = createComputeProgram(gl, shader)
+	// can delete shaders now
+    gl.deleteShader(shader);
+
+    let uniforms = {}
+	uniformsFromCode(gl, program, source, uniforms)
+
+	return {
+		id: program,
+		begin: function() { gl.useProgram(this.id); return this; },
+		end: function() { gl.useProgram(0); return this; },
+		dispose() {
+            gl.deleteProgram(this.id)
+        },
+        uniform: function(name, x, y, z, w) {
+			uniforms[name].set(x, y, z, w);
+			return this; 
+		},
+
+		uniforms
+	}
+}
+
 // combine above functions to create a program from GLSL code:
 function makeProgramFromCode(gl, vertexCode, fragmentCode) {
     // create GLSL shaders, upload the GLSL source, compile the shaders
@@ -2254,7 +2292,10 @@ function quat_rotation_to(out, q, dir, fwd=[0,0,-1]) {
 module.exports = {
 	createShader: createShader,
 	createProgram: createProgram,
+    createComputeProgram,
 	makeProgram: makeProgram,
+    makeComputeProgram,
+
 	makeProgramFromCode: makeProgramFromCode,
 	uniformsFromCode: uniformsFromCode,
 	

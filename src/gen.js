@@ -20,6 +20,41 @@ let blacklist = {
 	glfwUpdateGamepadMappings: true,
 	glfwSetWindowOpacity: true,
 	glfwGetMonitorContentScale: true,
+
+	// can't handle array args yet:
+	glLoadTransposeMatrixd: true,
+	glLoadTransposeMatrixf: true,
+	glMultTransposeMatrixd: true,
+	glMultTransposeMatrixf: true,
+	glLoadTransposeMatrixdARB: true,
+	glLoadTransposeMatrixfARB: true,
+	glMultTransposeMatrixdARB: true,
+	glMultTransposeMatrixfARB: true,
+	glPathGlyphIndexRangeNV: true,
+
+	glGetUniformOffsetEXT: true,
+	glShaderSourceARB: true,
+	glGetHandleARB: true,
+	glCreateShaderObjectARB: true,
+	glColorPointerListIBM: true,
+	glEdgeFlagPointerListIBM: true,
+	glFogCoordPointerListIBM: true,
+	glIndexPointerListIBM: true,
+	glNormalPointerListIBM: true,
+	glSecondaryColorPointerListIBM: true,
+	glTexCoordPointerListIBM: true,
+	glVertexPointerListIBM: true,
+	glColorPointervINTEL: true,
+	glNormalPointervINTEL: true,
+	glTexCoordPointervINTEL: true,
+	glVertexPointervINTEL: true,
+	glWeightPathsNV: true,
+	glGetClipPlanef: true,
+	glGetClipPlanex: true,
+	glGetTexEnvxv: true,
+	glGetPathLengthNV: true,
+	glVDPAURegisterVideoSurfaceNV: true,
+	glVDPAURegisterOutputSurfaceNV: true,
 }
 
 function generate_handler(name, s_name, ret, arg, out_blocks) {
@@ -236,7 +271,8 @@ function generate_handler(name, s_name, ret, arg, out_blocks) {
 	const modulename = "gles3"
 	const header = fs.readFileSync(path.join(__dirname, "..", "src", "GLES3", "gl3.h"), "utf-8")
 	const header2 = fs.readFileSync(path.join(__dirname, "..", "src", "GLES3", "gl2ext.h"), "utf-8")
-	const header3 = fs.readFileSync(path.join(__dirname, "..", "src", "GL", "glew.h"), "utf-8")
+	const header_glew = fs.readFileSync(path.join(__dirname, "..", "src", "GL", "glew.h"), "utf-8")
+	
 	const module_header = fs.readFileSync(path.join(__dirname, "..", "src", `node-${modulename}.h`), "utf-8")
 
 	
@@ -274,7 +310,7 @@ function generate_handler(name, s_name, ret, arg, out_blocks) {
 			}
 		}
 
-		while (match = regex.exec(header3)) {
+		while (match = regex.exec(header_glew)) {
 			const name = match[1], val = match[2];
 			if (!visited[name]) {
 				visited[name] = true
@@ -304,6 +340,39 @@ function generate_handler(name, s_name, ret, arg, out_blocks) {
 
 			if (!out_function_names.find(s=>s==s_name) && !blacklist[name]) {
 				generate_handler(name, s_name, ret, arg, out_blocks);
+				out_function_names.push(s_name);
+			}
+		}
+	}
+
+	{
+		// capture functions defined in glew.h
+		let sigs = {}
+		
+		const regex = /typedef\s+([A-Za-z_]+)\s+\(GLAPIENTRY\s\*\s([A-Z]+)\)\s+\(([^)]+)/g
+		let match
+		while (match = regex.exec(header_glew)) {
+			const [unused, ret, mangled, args] = match
+			sigs[mangled] = [ret, args]
+		}
+
+
+		const regex1 = /GLEW_FUN_EXPORT\s+([A-Z]+)\s+__glew([A-Za-z0-9_]+)/g
+		while (match = regex1.exec(header_glew)) {
+			const s_name = match[2];
+			const suffix = s_name.substring(s_name.length - 3)
+			const name = "gl"+s_name
+			const sig = sigs[ match[1] ]
+
+			if (!out_function_names.find(s=>s==s_name) 
+				&& !blacklist[name] 
+				&& sig 
+				&& s_name.substring(0, 3) != "Get" // don't try to generate glGet functions
+				&& suffix != "ARB"
+				&& suffix != "OES"
+				) {  
+				const [ret, arg] = sigs[ match[1] ]
+				generate_handler(name, s_name, ret, arg, out_blocks)
 				out_function_names.push(s_name);
 			}
 		}

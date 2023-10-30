@@ -276,10 +276,24 @@ napi_value GetAttribLocation(napi_env env, napi_callback_info info) {
 	return (status == napi_ok) ? result_value : nullptr;
 }
 
+napi_value GetIntegerv(napi_env env, napi_callback_info info) {
+	napi_status status = napi_ok;
+	napi_value args[2];
+	size_t argc = checkArgCount(env, info, args, 1, 1);
+	GLenum pname = getUint32(env, args[0]);
+	GLint64 data = 0;
+	// void glGetInteger64v(GLenum pname, GLint64 *data)
+	glGetInteger64v(pname, &data);
+
+	napi_value result_value;
+	status = napi_create_int32(env, data, &result_value);
+	return (status == napi_ok) ? result_value : nullptr;
+}
+
 napi_value GetInteger64v(napi_env env, napi_callback_info info) {
 	napi_status status = napi_ok;
 	napi_value args[2];
-	size_t argc = checkArgCount(env, info, args, 2, 2);
+	size_t argc = checkArgCount(env, info, args, 1, 1);
 	GLenum pname = getUint32(env, args[0]);
 	GLint64 data = 0;
 	// void glGetInteger64v(GLenum pname, GLint64 *data)
@@ -290,10 +304,26 @@ napi_value GetInteger64v(napi_env env, napi_callback_info info) {
 	return (status == napi_ok) ? result_value : nullptr;
 }
 
+napi_value GetIntegeri_v(napi_env env, napi_callback_info info) {
+	napi_status status = napi_ok;
+	napi_value args[3];
+	size_t argc = checkArgCount(env, info, args, 2, 2);
+	GLenum target = getUint32(env, args[0]);
+	GLuint index = getUint32(env, args[1]);
+	GLint data;
+	// void glGetIntegeri_v(GLenum target, GLuint index, GLint *data)
+	glGetIntegeri_v(target, index, &data);
+
+	napi_value result_value;
+	status = napi_create_int32(env, data, &result_value);
+	return (status == napi_ok) ? result_value : nullptr;
+}
+
+
 napi_value GetInteger64i_v(napi_env env, napi_callback_info info) {
 	napi_status status = napi_ok;
 	napi_value args[3];
-	size_t argc = checkArgCount(env, info, args, 3, 3);
+	size_t argc = checkArgCount(env, info, args, 2, 2);
 	GLenum target = getUint32(env, args[0]);
 	GLuint index = getUint32(env, args[1]);
 	GLint64 data = 0;
@@ -309,7 +339,7 @@ napi_value GetInteger64i_v(napi_env env, napi_callback_info info) {
 napi_value GetBufferParameteri64v(napi_env env, napi_callback_info info) {
 	napi_status status = napi_ok;
 	napi_value args[3];
-	size_t argc = checkArgCount(env, info, args, 3, 3);
+	size_t argc = checkArgCount(env, info, args, 2, 2);
 	GLenum target = getUint32(env, args[0]);
 	GLenum pname = getUint32(env, args[1]);
 	GLint64 data = 0;
@@ -507,3 +537,6 @@ napi_value VertexAttribPointer(napi_env env, napi_callback_info info) {
 	glVertexAttribPointer(index, components, type, normalized, stride, reinterpret_cast<const void*>(offset));
 	return NULL;
 }
+
+///////////////////////////
+
