@@ -98,8 +98,8 @@ class Window {
 		Object.assign(this, options)
 
 		glfw.defaultWindowHints();
-		glfw.windowHint(glfw.CONTEXT_VERSION_MAJOR, 3);
-		glfw.windowHint(glfw.CONTEXT_VERSION_MINOR, 3);
+		glfw.windowHint(glfw.CONTEXT_VERSION_MAJOR, options.CONTEXT_VERSION_MAJOR || 3);
+		glfw.windowHint(glfw.CONTEXT_VERSION_MINOR, options.CONTEXT_VERSION_MINOR || 3);
 		glfw.windowHint(glfw.OPENGL_FORWARD_COMPAT, 1);
 		glfw.windowHint(glfw.OPENGL_PROFILE, glfw.OPENGL_CORE_PROFILE);
 		glfw.windowHint(glfw.SAMPLES, 4);
