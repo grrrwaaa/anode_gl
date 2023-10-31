@@ -46,10 +46,10 @@ let tex3d = glutils.createTexture3D(gl, {
 	width:N 
 });
 // create a duplicate: 
-tex3d.data.forEach((v,i,a) => a[i] = Math.random())   // or data.slice()
+tex3d.data.forEach((v,i,a) => a[i] = Math.random()) 
+// duplicate data
 tex3d.data1 = tex3d.data.slice()
-// copy it back
-//tex3d.data.set(tex3d.data1)
+// copy it to gpu
 tex3d.bind().submit()
 
 let cubeprogram = glutils.makeProgram(gl,
@@ -108,8 +108,8 @@ out vec4 outColor;
 
 void main() {
 	outColor = v_color;
-	//outColor = vec4(1.);
 	outColor.a = (1.);
+	outColor = vec4(1.);
 }
 `);
 
@@ -347,55 +347,54 @@ function animate() {
 	mat4.translate(modelmatrix, modelmatrix, [-1, 0.5, -1, 1])
 	mat4.scale(modelmatrix, modelmatrix, [2/N, 2/N, 2/N])
 	
-	// if (Math.floor(t) % 2) {
-	// 	cubeprogram.begin();
-	// 	cubeprogram.uniform("u_viewmatrix", viewmatrix);
-	// 	cubeprogram.uniform("u_projmatrix", projmatrix);
-	// 	cubeprogram.uniform("u_modelmatrix", modelmatrix);
-	// 	cubeprogram.uniform("u_N", M);
-	// 	cubeprogram.uniform("u_tex", 0);
-	// 	cube.bind().drawInstanced(cubes.count).unbind()
-	// 	cubeprogram.end();
-	// }
+	if (Math.floor(t) % 2) {
+		cubeprogram.begin();
+		cubeprogram.uniform("u_viewmatrix", viewmatrix);
+		cubeprogram.uniform("u_projmatrix", projmatrix);
+		cubeprogram.uniform("u_modelmatrix", modelmatrix);
+		cubeprogram.uniform("u_N", M);
+		cubeprogram.uniform("u_tex", 0);
+		cube.bind().drawInstanced(cubes.count).unbind()
+		cubeprogram.end();
+
+	} else {
 	
+		gl.enable(gl.BLEND);
+		gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
+		gl.depthMask(false)
 
+		mat4.identity(modelmatrix)
+		mat4.translate(modelmatrix, modelmatrix, [-1, 0.5, -1, 1])
+		mat4.scale(modelmatrix, modelmatrix, [2, 2, 2])
+		mat4.invert(modelmatrix_inverse, modelmatrix)
+		mat4.invert(viewmatrix_inverse, viewmatrix)
+		mat4.invert(projmatrix_inverse, projmatrix)
 
-	gl.enable(gl.BLEND);
-	gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
-	gl.depthMask(false)
+		// use back-face culling if you want to render from inside the cloud
+		// this would be easier if the entire thing was handled by a cloud-pass, e.g. in gbuffer
+		// then the near-plane origin & ray direction are in the shader pass,
+		// the front & rear face intersections can be computed by the bounding box using model & view matrices
+		// and any depth-buffer terminations can be handled in the same way
+		gl.enable(gl.CULL_FACE);
+		gl.cullFace(gl.FRONT)
 
-	mat4.identity(modelmatrix)
-	mat4.translate(modelmatrix, modelmatrix, [-1, 0.5, -1, 1])
-	mat4.scale(modelmatrix, modelmatrix, [2, 2, 2])
-	mat4.invert(modelmatrix_inverse, modelmatrix)
-	mat4.invert(viewmatrix_inverse, viewmatrix)
-	mat4.invert(projmatrix_inverse, projmatrix)
+		shaderman.shaders.vol.begin()
+			.uniform("u_viewmatrix", viewmatrix)
+			.uniform("u_projmatrix", projmatrix)
+			.uniform("u_modelmatrix", modelmatrix)
+			.uniform("u_modelmatrix_inverse", modelmatrix_inverse)
+			.uniform("u_viewmatrix_inverse", viewmatrix_inverse)
+			.uniform("u_projmatrix_inverse", projmatrix_inverse)
+			.uniform("u_N", M)
+			.uniform("u_tex", 0)
+		vol.bind().draw().unbind()
+		shaderman.shaders.vol.end();
 
-	// use back-face culling if you want to render from inside the cloud
-	// this would be easier if the entire thing was handled by a cloud-pass, e.g. in gbuffer
-	// then the near-plane origin & ray direction are in the shader pass,
-	// the front & rear face intersections can be computed by the bounding box using model & view matrices
-	// and any depth-buffer terminations can be handled in the same way
-	gl.enable(gl.CULL_FACE);
-	gl.cullFace(gl.FRONT)
+		gl.disable(gl.CULL_FACE);
 
-	shaderman.shaders.vol.begin()
-		.uniform("u_viewmatrix", viewmatrix)
-		.uniform("u_projmatrix", projmatrix)
-		.uniform("u_modelmatrix", modelmatrix)
-		.uniform("u_modelmatrix_inverse", modelmatrix_inverse)
-		.uniform("u_viewmatrix_inverse", viewmatrix_inverse)
-		.uniform("u_projmatrix_inverse", projmatrix_inverse)
-		.uniform("u_N", M)
-		.uniform("u_tex", 0)
-	vol.bind().draw().unbind()
-	shaderman.shaders.vol.end();
-
-	gl.disable(gl.CULL_FACE);
-
-	gl.disable(gl.BLEND);
-	gl.depthMask(true)
-
+		gl.disable(gl.BLEND);
+		gl.depthMask(true)
+	}
 
 	tex3d.unbind()
 
