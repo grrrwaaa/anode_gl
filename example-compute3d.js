@@ -6,6 +6,7 @@ const gl = require('gles3.js'),
     Window = require("window.js"),
 	glutils = require('glutils.js'),
 	Shaderman = require('shaderman.js')
+const { CON_0_ATI } = require("./gles3")
 
 let window = new Window({
 	CONTEXT_VERSION_MAJOR: 4, // need gl 4.3 for compute shaders
@@ -39,13 +40,16 @@ console.log("maximum number of work groups in each dimension", max_compute_work_
 console.log("maximum size of work groups in each dimension", max_compute_work_group_size)
 console.log("Number of invocations in a single local work group that may be dispatched to a compute shader ", max_compute_work_group_invocations)
 
+
+let D = 1
+
 let compute_name = "test"
 let compute_source = `
 #version 430 core
 
 // local size of work group
 // using local size=1 so we can operate per-pixel.
-layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+layout (local_size_x = ${D}, local_size_y = ${D}, local_size_z = ${D}) in;
 
 // a 3D image (a single layer of a texture) 
 // compute shaders use pixel coordinates, not normalized coordinates
@@ -85,14 +89,14 @@ let program = glutils.makeComputeProgram(gl, compute_source, compute_name)
 // 	float: true,
 // })
 
-let N = 64
+let N = 128
 
 let tex3d = glutils.createTexture3D(gl, { 
 	float:true, 
 	channels: 1,
 	width:N 
 });
-tex3d.data.forEach((v,i,a) => a[i] = Math.random())
+tex3d.data.forEach((v,i,a) => a[i] = 0.2)
 tex3d.bind().submit()
 
 // lets make an instanced array of cubes:
@@ -123,6 +127,7 @@ cubes.attachTo(cube);
 
 console.log(gl.getAttribLocation(shaderman.shaders.icubes.id, "i_quat"))
 
+
 window.draw = function() {
 	let { t, dt, dim } = this;
 
@@ -148,7 +153,7 @@ window.draw = function() {
 	// this is how to run the shader, with X, Y, Z work groups
 	// here we run 1 work group per pixel (and z=1 because the image is 2D)
 	// they happen in an unspecified order
-	gl.dispatchCompute(tex3d.width, tex3d.height, tex3d.depth);
+	gl.dispatchCompute(tex3d.width/D, tex3d.height/D, tex3d.depth/D);
 	// make sure writing to image has finished before we use it
 	// this will block the CPU; maybe want to push this call back to just before the texture is going to be used
 	// see https://registry.khronos.org/OpenGL-Refpages/gl4/html/glMemoryBarrier.xhtml
