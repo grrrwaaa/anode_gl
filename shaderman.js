@@ -9,6 +9,8 @@ class Shaderman extends events.EventEmitter {
 	// shaders contains a list of shaderprograms
 	// indexed by the fragname
 	shaders = {};
+	// a similar list, but for compute shaders:
+	computes = {};
 	// the folder to watch
 	folder = "shaders";
 	// keeps track of the list of filepaths of shaders being watched
@@ -31,6 +33,16 @@ class Shaderman extends events.EventEmitter {
 
 				// else try to load the shader with name "key"
 				return this.create(gl, key, key)
+			}
+		})
+
+		this.computes = new Proxy({}, {
+			get: (target, key, receiver) => {
+				// if shader already exists, return it (bypassing proxy):
+				if (target.hasOwnProperty(key)) return Reflect.get(target, key, receiver);
+
+				// else try to load the shader with name "key"
+				return this.createCompute(gl, key)
 			}
 		})
 	}
@@ -70,10 +82,39 @@ class Shaderman extends events.EventEmitter {
 		return program
 	}
 
+	// create(gl, "test") will load "test.glsl" 
+	// the shader will be available under this.computes["test"]
+	createCompute(gl, computename) {
+		let args = [computename]
+		let name = computename
+		let computepath = path.join(this.folder, `${computename}.compute.glsl`)
+		let computecode = fs.readFileSync(computepath, "utf-8")
+
+		this.addDependency(computepath, args)
+
+		// apply #include rules:
+		const replacer = (match, filepath) => {
+			filepath = path.join(this.folder, filepath)
+			if (fs.existsSync(filepath)) {
+				this.addDependency(filepath, args)
+				return "\n"+fs.readFileSync(filepath, "utf-8")+"\n"
+			}
+			return "\n"
+		}
+		computecode = computecode.replace(/#include\s+["']([^"']+)["']/g, replacer);
+
+		let program = glutils.makeComputeProgram(gl, computecode, name)
+		this.computes[name] = program
+		return program
+	}
+
 	reload(gl, name) {
 		if (this.shaders[name]) {
 			this.shaders[name].dispose()
 			return this.create(gl, name)
+		} else if (this.computes[name]) {
+			this.computes[name].dispose()
+			return this.createCompute(gl, name)
 		}
 	}
 
@@ -97,12 +138,21 @@ class Shaderman extends events.EventEmitter {
 			if (this.modified[filepath] != mtime) {
 				this.modified[filepath] = mtime
 				for (let args in this.dependencies[filepath]) {
-					let [vertname, fragname] = args.split(",")
-					console.log("reload shader", filename, fragname)
-					this.shaders[fragname].dispose()
-					this.create(gl, vertname, fragname)
+					if (args.indexOf(",") >= 0) {
+						let [vertname, fragname] = args.split(",")
+						console.log("reload shader", filename, fragname)
+						this.shaders[fragname].dispose()
+						this.create(gl, vertname, fragname)
 
-					this.emit('reload', vertname, fragname);
+						this.emit('reload', vertname, fragname);
+					} else {
+						let computename = args
+						console.log("reload shader", filename, computename)
+						this.computes[computename].dispose()
+						this.createCompute(gl, computename)
+
+						this.emit('reload', computename);
+					}
 				}
 			}
 		})

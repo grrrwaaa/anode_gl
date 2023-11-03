@@ -41,47 +41,8 @@ console.log("maximum size of work groups in each dimension", max_compute_work_gr
 console.log("Number of invocations in a single local work group that may be dispatched to a compute shader ", max_compute_work_group_invocations)
 
 
-let D = 1
+let program = shaderman.computes.test3d
 
-let compute_name = "test"
-let compute_source = `
-#version 430 core
-
-// local size of work group
-// using local size=1 so we can operate per-pixel.
-layout (local_size_x = ${D}, local_size_y = ${D}, local_size_z = ${D}) in;
-
-// a 3D image (a single layer of a texture) 
-// compute shaders use pixel coordinates, not normalized coordinates
-// the internal format must match the texture
-layout(r32f, binding = 0) writeonly uniform image3D img_out;
-
-// variables
-uniform float t; 
-
-/*
-some built-in variables:
-uvec3	gl_NumWorkGroups	number of work groups that have been dispatched
-uvec3	gl_WorkGroupSize	size of the work group (local size) operated on (what we defined above)
-uvec3	gl_WorkGroupID		index of the work group currently being operated on
-uvec3	gl_LocalInvocationID	index of the current work item in the work group
-uint	gl_LocalInvocationIndex	1d index representation of gl_LocalInvocationID
-uvec3	gl_GlobalInvocationID	global index of the current work item
-*/
-
-void main() {
-    float value = 0.;
-
-	// since our local size is 1,1 the global ID is the texel coordinate:
-    ivec3 voxel_coord = ivec3(gl_GlobalInvocationID.xyz);
-	
-	// normalized to the image size, which equals the number of workgroups:
-    value = mod(t + float(voxel_coord.x)/gl_NumWorkGroups.x + float(voxel_coord.y)/gl_NumWorkGroups.y + float(voxel_coord.z)/gl_NumWorkGroups.z, 1.);
-	
-    imageStore(img_out, voxel_coord, vec4(value));
-}
-`
-let program = glutils.makeComputeProgram(gl, compute_source, compute_name)
 //console.log(program)
 
 // let tex = glutils.createTexture(gl, {
@@ -89,34 +50,47 @@ let program = glutils.makeComputeProgram(gl, compute_source, compute_name)
 // 	float: true,
 // })
 
-let N = 128
+// 3d texture resolution NxNxN
+let N = 64 * 2
+// cube instances MxMxM
+let M = 16 
 
-let tex3d = glutils.createTexture3D(gl, { 
+let tex3dA = glutils.createTexture3D(gl, { 
 	float:true, 
 	channels: 1,
-	width:N 
+	width:N,  
 });
-tex3d.data.forEach((v,i,a) => a[i] = 0.2)
-tex3d.bind().submit()
+//tex3dA.data.forEach((v,i,a) => a[i] = 0.2)
+//tex3dA.bind()
+// gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+// gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+// gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_WRAP_R, gl.REPEAT);
+//tex3dA.submit()
+
+let tex3dB = glutils.createTexture3D(gl, { 
+	float:true, 
+	channels: 1,
+	width:N,  
+});
 
 // lets make an instanced array of cubes:
-let cube = glutils.createVao(gl, glutils.makeCube({ min:-0.5/N, max:0.5/N, div: 2 }), shaderman.shaders.icubes.id)
+let cube = glutils.createVao(gl, glutils.makeCube({ min:-0.5/M, max:0.5/M, div: 2 }), shaderman.shaders.icubes.id)
 let cubes = glutils.createInstances(gl, [
 	{ name:"i_pos", components:4 },
 	{ name:"i_quat", components:4 },
-], N*N*N)
+], M*M*M)
 // the .instances provides a convenient interface to the underlying arraybuffer
 cubes.instances.forEach((obj, i) => {
-	let x = 0.5 + i % N;
-	let y = 0.5 + Math.floor(i/N) % N;
-	let z = 0.5 + Math.floor(i/(N*N)) % N;
+	let x = 0.5 + i % M;
+	let y = 0.5 + Math.floor(i/M) % M;
+	let z = 0.5 + Math.floor(i/(M*M)) % M;
 	// each field is exposed as a corresponding typedarray view
 	// making it easy to use other libraries such as gl-matrix
 	// this is all writing into one contiguous block of binary memory for all instances (fast)
 	vec4.set(obj.i_pos, 
-		x/N,
-		y/N,
-		z/N,
+		x/M,
+		y/M,
+		z/M,
 		1
 	);
 	quat.set(obj.i_quat, 0, 0, 0, 1);
@@ -144,33 +118,39 @@ window.draw = function() {
 	mat4.lookAt(viewmatrix, eye, at, [0, 1, 0]);
 	mat4.perspective(projmatrix, Math.PI*0.6, aspect, near, far);
 
+	// swap textures for double buffer
+	{
+		let tmp = tex3dA;
+		tex3dA = tex3dB;
+		tex3dB = tmp;
+	}
+	
 	// void glBindImageTexture(GLuint unit, GLuint texture, GLint level, GLboolean layered, GLint layer, GLenum access, GLenum format);
-	// access can be GL_READ_ONLY, GL_WRITE_ONLY, or GL_READ_WRITE
-	gl.bindImageTexture(0, tex3d.id, 0, true, 0, gl.READ_WRITE, tex3d.internalFormat);
+	// access can be READ_ONLY, WRITE_ONLY, or READ_WRITE
+	gl.bindImageTexture(1, tex3dB.id, 0, true, 0, gl.READ_ONLY, tex3dB.internalFormat);
+	gl.bindImageTexture(0, tex3dA.id, 0, true, 0, gl.WRITE_ONLY, tex3dA.internalFormat);
+	
 	// bind shader
 	program.begin()
 	.uniform("t", t)
 	// this is how to run the shader, with X, Y, Z work groups
 	// here we run 1 work group per pixel (and z=1 because the image is 2D)
 	// they happen in an unspecified order
-	gl.dispatchCompute(tex3d.width/D, tex3d.height/D, tex3d.depth/D);
+	gl.dispatchCompute(tex3dA.width, tex3dA.height, tex3dA.depth);
 	// make sure writing to image has finished before we use it
 	// this will block the CPU; maybe want to push this call back to just before the texture is going to be used
 	// see https://registry.khronos.org/OpenGL-Refpages/gl4/html/glMemoryBarrier.xhtml
 	// lazy option is gl.ALL_BARRIER_BITS
-	gl.memoryBarrier(gl.SHADER_IMAGE_ACCESS_BARRIER_BIT);
+	//gl.memoryBarrier(gl.SHADER_IMAGE_ACCESS_BARRIER_BIT);
+	gl.memoryBarrier(gl.ALL_BARRIER_BITS);
 
 	gl.viewport(0, 0, dim[0], dim[1]);
 	gl.clearColor(0., 0., 0., 1);
 	gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 	gl.enable(gl.DEPTH_TEST)
 
-	// shaderman.shaders.show.begin()
-	// tex.bind()
-	// quad_vao.bind().draw()
 
-	tex3d.bind()
-
+	tex3dA.bind()
 	shaderman.shaders.icubes.begin()
 	.uniform("u_modelmatrix", modelmatrix)
 	.uniform("u_viewmatrix", viewmatrix)
