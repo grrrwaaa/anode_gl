@@ -49,15 +49,15 @@ void main() {
 	vec4 oldE = imageLoad(img_in, E);
 	vec4 oldW = imageLoad(img_in, W);
 
-	vec4 old = mix(oldC, (oldE + oldW)/2., 0.9) * 0.99;
+	vec4 old = mix(oldC, mix(oldE, oldW, 0.5), 0.) * 0.9999;
 
 	// create a new position relative to time:
-	float a = t * 0.5;
+	float a = t * 1.;
 	vec3 pos = vec3(
 		sin(a), 
-		sin(a * PI), 
-		sin(a / PI)
-	) * 0.5 + 0.5;
+		sin(a * 1.7), 
+		sin(a * 1.3)
+	) * 0.4 + 0.5;
 	pos *= dim;
 	
     vec4 value = vec4(exp(-0.1*distance(coord, pos)));

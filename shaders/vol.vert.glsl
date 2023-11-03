@@ -83,7 +83,7 @@ void main() {
 	//vec3 rd = normalize(mat3(u_modelmatrix_inverse) * v_raydir);
 	vec3 eye_tc = (u_modelmatrix_inverse * vec4(v_eyepos, 1.)).xyz;
 	// clamp to box:
-	eye_tc = clamp(eye_tc, 0., 1.);
+	//eye_tc = clamp(eye_tc, 0., 1.);
 	vec3 rd_tc = normalize(v_tc - eye_tc);
 
 	v_rd = rd_tc;

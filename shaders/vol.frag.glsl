@@ -56,10 +56,12 @@ void main() {
 
 	// ok now step from t=0 to t=tmax
 	float a = 0.;
-	float dt = 0.25 / u_N;
+	float dt = 0.1 / u_N;
 	//float t0 = fract(tmax/dt);
 
 	float v = 0.;
+
+	vec4 result = vec4(0.);
 
 	float t=0.;
 	for (; t < tmax; t += dt) {
@@ -67,7 +69,11 @@ void main() {
 		//float weight = min(t, 1.);
 		vec3 pt = ro + t*rd;
 		float c = texture(u_tex, pt).x;
-		v += c * weight;
+		c = max(c, 0.);
+		//c = sqrt(c);
+		//v += max(c, 0.) * weight * 0.01;
+		v = max(v, c/2.);
+		//v = mix(pow(c * 2., 0.5), v, v);
 		//a = max(a, c);
 		// naive additive blending
 		a += max(c, 0.)*dt * weight*16.; 
@@ -80,17 +86,25 @@ void main() {
 		// a = mix(c1, a, opacity);
 
 		//a += 0.5*dt * weight;
-		if (c*weight > 0.1) {
-			//break;
+		if (c > 0.5) {
+			vec3 pt = ro + t*rd;
+			vec3 n = normal4(pt, u_tex, dt);
+
+			result = vec4(n*0.5+0.5, 1.);
+
+			float ndotr = dot(n, rd);
+			ndotr = pow(abs(ndotr), 0.5);
+			result += vec4(1.-abs(ndotr) );
+
+			break;
 		}
 	}
 
 	a = t < tmax ? 1. : 0. ;
 
-	vec3 pt = ro + t*rd;
-	vec3 n = normal4(pt, u_tex, dt);
+	
 
-	outColor = vec4(v_ro, 1.);
+	//outColor = vec4(v_ro, 1.);
 
 	// outColor = vec4(n*0.5+0.5, 1.);
 	// float ndotr = dot(n, rd);
@@ -100,7 +114,7 @@ void main() {
 	//a = 1. - exp(-(a)/tmax);
 	//a = 1.-exp(a/tmax);
 
-	//outColor = vec4(v_tc, 0.2);
+	outColor = vec4(v_tc, 0.2);
 	// float v = texture(u_tex, v_tc).r;
 	// outColor = vec4(rd, 0.5);
 	//outColor *= vec4(tmax);
@@ -109,10 +123,13 @@ void main() {
 	// outColor = vec4(v_normal*0.5+0.5, 1.);
 	//outColor = vec4(tmax);
 
-	// outColor = vec4(v * 0.1 );
+	outColor = vec4(v );
+	outColor = result;
 	// outColor = v < 1. ? vec4(v) : outColor;
+
+	//outColor = vec4(n, 1.);
 
 	// outColor = vec4(v_tc, 0.2);
 	//outColor = vec4(v_eyepos, 1);
-//	outColor = vec4(v_debug, 1.);
+	//outColor = vec4(v_debug, 1.);
 }

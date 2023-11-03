@@ -108,8 +108,8 @@ out vec4 outColor;
 
 void main() {
 	outColor = v_color;
-	outColor.a = (1.);
-	outColor = vec4(1.);
+	//outColor.a = (1.);
+	//outColor = vec4(1.);
 }
 `);
 
@@ -152,7 +152,7 @@ cubes.attachTo(cube);
 let volshader = shaderman.create(gl, "vol")
 
 // create a VAO from a basic geometry and shader
-let vol = glutils.createVao(gl, glutils.makeCube({ min:0, max:1, div: 32 }), volshader.id);
+let vol = glutils.createVao(gl, glutils.makeCube({ min:0, max:1, div: 128 }), volshader.id);
 
 let t = glfw.getTime();
 let fps = 60;
@@ -305,7 +305,7 @@ function animate() {
 	//tex3d.data.forEach((v, i, a) => a[i] = v * 0.99999)
 	// drop energy in at a random point:
 	{
-		let r = vec3.random(vec3.create(), Math.random())//for (let i=0; i<3; i++) p[i] = wrap(p[i] + 2*(Math.random()-0.5) , N)
+		let r = vec3.random(vec3.create(), Math.random()*0.4)//for (let i=0; i<3; i++) p[i] = wrap(p[i] + 2*(Math.random()-0.5) , N)
 		vec3.add(p, p, r)
 		r = vec3.random(vec3.create(), Math.random())//for (let i=0; i<3; i++) p[i] = wrap(p[i] + 2*(Math.random()-0.5) , N)
 		vec3.add(q, q, r)
@@ -340,14 +340,14 @@ function animate() {
 	gl.clearColor(0., 0., 0., 1);
 	gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 	gl.enable(gl.DEPTH_TEST)
-	//tex3d.bind().submit()
+	tex3d.bind().submit()
 
 	
 	mat4.identity(modelmatrix)
 	mat4.translate(modelmatrix, modelmatrix, [-1, 0.5, -1, 1])
 	mat4.scale(modelmatrix, modelmatrix, [2/N, 2/N, 2/N])
 	
-	if (Math.floor(t) % 2) {
+	if (0) {
 		cubeprogram.begin();
 		cubeprogram.uniform("u_viewmatrix", viewmatrix);
 		cubeprogram.uniform("u_projmatrix", projmatrix);
@@ -358,7 +358,7 @@ function animate() {
 		cubeprogram.end();
 
 	} else {
-	
+
 		gl.enable(gl.BLEND);
 		gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
 		gl.depthMask(false)

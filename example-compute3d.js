@@ -51,7 +51,7 @@ let program = shaderman.computes.test3d
 // })
 
 // 3d texture resolution NxNxN
-let N = 64 * 2
+let N = 64 * 3
 // cube instances MxMxM
 let M = 16 
 
@@ -99,7 +99,7 @@ cubes.bind().submit().unbind();
 // attach these instances to an existing VAO:
 cubes.attachTo(cube);
 
-console.log(gl.getAttribLocation(shaderman.shaders.icubes.id, "i_quat"))
+let vol = glutils.createVao(gl, glutils.makeCube({ min:0, max:1, div: 128 }))
 
 
 window.draw = function() {
@@ -108,6 +108,9 @@ window.draw = function() {
 	let viewmatrix = mat4.create();
 	let projmatrix = mat4.create();
 	let modelmatrix = mat4.create();
+	let modelmatrix_inverse = mat4.create();
+	let viewmatrix_inverse = mat4.create();
+	let projmatrix_inverse = mat4.create();
 
 	let aspect = dim[0]/dim[1]
 	let near = 0.01, far = 10
@@ -117,6 +120,10 @@ window.draw = function() {
 	let eye = [at[0] + d*Math.cos(a), at[1], at[2] + d*Math.sin(a)]
 	mat4.lookAt(viewmatrix, eye, at, [0, 1, 0]);
 	mat4.perspective(projmatrix, Math.PI*0.6, aspect, near, far);
+	
+	mat4.invert(modelmatrix_inverse, modelmatrix)
+	mat4.invert(viewmatrix_inverse, viewmatrix)
+	mat4.invert(projmatrix_inverse, projmatrix)
 
 	// swap textures for double buffer
 	{
@@ -151,11 +158,37 @@ window.draw = function() {
 
 
 	tex3dA.bind()
-	shaderman.shaders.icubes.begin()
-	.uniform("u_modelmatrix", modelmatrix)
-	.uniform("u_viewmatrix", viewmatrix)
-	.uniform("u_projmatrix", projmatrix)
-	cube.bind().drawInstanced(cubes.count)
+
+	if (0) {
+		shaderman.shaders.icubes.begin()
+		.uniform("u_modelmatrix", modelmatrix)
+		.uniform("u_viewmatrix", viewmatrix)
+		.uniform("u_projmatrix", projmatrix)
+		cube.bind().drawInstanced(cubes.count)
+	} else {
+
+		// use back-face culling if you want to render from inside the cloud
+		// this would be easier if the entire thing was handled by a cloud-pass, e.g. in gbuffer
+		// then the near-plane origin & ray direction are in the shader pass,
+		// the front & rear face intersections can be computed by the bounding box using model & view matrices
+		// and any depth-buffer terminations can be handled in the same way
+		gl.enable(gl.CULL_FACE);
+		gl.cullFace(gl.FRONT)
+
+		shaderman.shaders.vol.begin()
+			.uniform("u_viewmatrix", viewmatrix)
+			.uniform("u_projmatrix", projmatrix)
+			.uniform("u_modelmatrix", modelmatrix)
+			.uniform("u_modelmatrix_inverse", modelmatrix_inverse)
+			.uniform("u_viewmatrix_inverse", viewmatrix_inverse)
+			.uniform("u_projmatrix_inverse", projmatrix_inverse)
+			.uniform("u_N", M)
+			.uniform("u_tex", 0)
+		vol.bind().draw().unbind()
+		shaderman.shaders.vol.end();
+
+		gl.disable(gl.CULL_FACE);
+	}
 
 	if (Math.floor(t+dt) > Math.floor(t)) {
 		console.log("fps", 1/dt)
