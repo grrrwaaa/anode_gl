@@ -55,12 +55,12 @@ void main() {
 	float a = t * 1.;
 	vec3 pos = vec3(
 		sin(a), 
-		sin(a * 1.7), 
-		sin(a * 1.3)
+		sin(a * 1.2), 
+		sin(a * 1.5)
 	) * 0.4 + 0.5;
 	pos *= dim;
 	
-    vec4 value = vec4(exp(-0.1*distance(coord, pos)));
+    vec4 value = vec4(exp(-0.2*distance(coord, pos)));
 
 	value = max(value, old);
 

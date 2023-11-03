@@ -115,7 +115,7 @@ window.draw = function() {
 	let aspect = dim[0]/dim[1]
 	let near = 0.01, far = 10
 	let at = [0.5, 0.5, 0.5]
-	let d = 1
+	let d = 1 + 0.5*Math.sin(t * 0.5)
 	let a = t / 8
 	let eye = [at[0] + d*Math.cos(a), at[1], at[2] + d*Math.sin(a)]
 	mat4.lookAt(viewmatrix, eye, at, [0, 1, 0]);
