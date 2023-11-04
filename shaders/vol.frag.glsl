@@ -3,6 +3,9 @@ precision mediump float;
 
 uniform sampler3D u_tex;
 uniform float u_N;
+
+uniform float iso;
+
 in vec4 v_color;
 in vec3 v_normal;
 in vec3 v_tc;
@@ -64,12 +67,19 @@ void main() {
 	vec4 result = vec4(0.);
 
 	float t=0.;
+
+	// if we start off inside, skip ahead:
+	for (; t < tmax; t += dt) {
+		vec3 pt = ro + t*rd;
+		float c = texture(u_tex, pt).x;
+		if (c < iso) break;
+	}
+
 	for (; t < tmax; t += dt) {
 		float weight = min(1., tmax-t);
 		//float weight = min(t, 1.);
 		vec3 pt = ro + t*rd;
 		float c = texture(u_tex, pt).x;
-		c = max(c, 0.);
 		//c = sqrt(c);
 		//v += max(c, 0.) * weight * 0.01;
 		v = max(v, c/2.);
@@ -86,15 +96,23 @@ void main() {
 		// a = mix(c1, a, opacity);
 
 		//a += 0.5*dt * weight;
-		if (c > 0.5) {
-			vec3 pt = ro + t*rd;
-			vec3 n = normal4(pt, u_tex, dt);
+		if (c >= iso) {
+			// actually probably want to estimate a refinement to `t` to get `c` closer to 0.5
+			float t0 = t-dt;
+			float c0 = texture(u_tex, ro + t0*rd).x;
+			// we want the point `a` between t0 and t where the line from c0 to c is exactly 0.5
+			// 0.5 = c0 + a*(c - c0)  => a = (0.5-c0)/(c-c0) 
+			float a = (iso-c0)/(c-c0);
+			float ta = t0 + a*(t-t0);
 
-			result = vec4(n*0.5+0.5, 1.);
+			vec3 pt = ro + ta*rd;
+			vec3 n = normal4(pt, u_tex, 0.005);
+
+			result += vec4(n*0.5+0.5, 1.);
 
 			float ndotr = dot(n, rd);
 			ndotr = pow(abs(ndotr), 0.5);
-			result += vec4(1.-abs(ndotr) );
+			result = mix(result, vec4(1.-abs(ndotr)), 0.6);
 
 			break;
 		}

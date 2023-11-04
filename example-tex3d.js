@@ -46,7 +46,7 @@ let tex3d = glutils.createTexture3D(gl, {
 	width:N 
 });
 // create a duplicate: 
-tex3d.data.forEach((v,i,a) => a[i] = Math.random()) 
+tex3d.data.forEach((v,i,a) => a[i] = Math.random() * 0.75) 
 // duplicate data
 tex3d.data1 = tex3d.data.slice()
 // copy it to gpu
@@ -305,9 +305,9 @@ function animate() {
 	//tex3d.data.forEach((v, i, a) => a[i] = v * 0.99999)
 	// drop energy in at a random point:
 	{
-		let r = vec3.random(vec3.create(), Math.random()*0.4)//for (let i=0; i<3; i++) p[i] = wrap(p[i] + 2*(Math.random()-0.5) , N)
+		let r = vec3.random(vec3.create(), Math.random()*Math.random()*4)//for (let i=0; i<3; i++) p[i] = wrap(p[i] + 2*(Math.random()-0.5) , N)
 		vec3.add(p, p, r)
-		r = vec3.random(vec3.create(), Math.random())//for (let i=0; i<3; i++) p[i] = wrap(p[i] + 2*(Math.random()-0.5) , N)
+		r = vec3.random(vec3.create(), Math.random()*Math.random())//for (let i=0; i<3; i++) p[i] = wrap(p[i] + 2*(Math.random()-0.5) , N)
 		vec3.add(q, q, r)
 		al_field3d_splat(DIM, tex3d.data, 1, p)
 		al_field3d_splat(DIM, tex3d.data, -1, q) // balance total of what we add & what we remove
@@ -328,12 +328,13 @@ function animate() {
 	let viewmatrix_inverse = mat4.create();
 	let projmatrix_inverse = mat4.create();
 	let angle = t/6;
-	let r = 1.5 + Math.sin(t);
-	let x = r*Math.cos(angle), y = r*Math.sin(angle)
+
+	let a = t*0.1
+	let eye = [ Math.sin(a)*0.8, Math.sin(a*1.3)*0.8 + 1.5, Math.cos(a*1.5)*0.8 ]
+	let at = [ Math.cos(a*1.2)*0.3, Math.sin(a*1.1)*0.3 + 1.5, Math.sin(a*1.4)*-0.3 ]
+	let r = 0.5 + Math.sin(t);
 	
-	let camera_pos = [x, 1.5 + 0.1*Math.sin(t/Math.PI), y];
-	let camera_at = [0, 1.5 - 0.1*Math.sin(t/Math.PI), 0];
-	mat4.lookAt(viewmatrix, camera_pos, camera_at, [0, 1, 0]);
+	mat4.lookAt(viewmatrix, eye, at, [0, 1, 0]);
 	mat4.perspective(projmatrix, Math.PI*0.6, dim[0]/dim[1], 0.01, 20);
 
 	gl.viewport(0, 0, dim[0], dim[1]);
@@ -387,6 +388,7 @@ function animate() {
 			.uniform("u_projmatrix_inverse", projmatrix_inverse)
 			.uniform("u_N", M)
 			.uniform("u_tex", 0)
+			.uniform("iso", 0.5)
 		vol.bind().draw().unbind()
 		shaderman.shaders.vol.end();
 

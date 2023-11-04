@@ -43,14 +43,8 @@ console.log("maximum size of work groups in each dimension", max_compute_work_gr
 console.log("Number of invocations in a single local work group that may be dispatched to a compute shader ", max_compute_work_group_invocations)
 
 
-let program = shaderman.computes.test3d
-
+let program = shaderman.computes.test3dA
 //console.log(program)
-
-// let tex = glutils.createTexture(gl, {
-// 	width: 512, height: 512, 
-// 	float: true,
-// })
 
 // 3d texture resolution NxNxN
 let N = 64 * 3
@@ -62,13 +56,6 @@ let tex3dA = glutils.createTexture3D(gl, {
 	channels: 4,
 	width:N,  
 });
-//tex3dA.data.forEach((v,i,a) => a[i] = 0.2)
-//tex3dA.bind()
-// gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_WRAP_S, gl.REPEAT);
-// gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_WRAP_T, gl.REPEAT);
-// gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_WRAP_R, gl.REPEAT);
-//tex3dA.submit()
-
 let tex3dB = glutils.createTexture3D(gl, { 
 	float:true, 
 	channels: 4,
