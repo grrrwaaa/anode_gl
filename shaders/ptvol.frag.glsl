@@ -72,7 +72,7 @@ void main() {
 
 	// ok now step from t=0 to t=tmax
 	float a = 0.;
-	float dt = 1. / u_N;
+	float dt = 0.5 / u_N;
 	//float t0 = fract(tmax/dt);
 
 	float v = 0.;
@@ -96,13 +96,11 @@ void main() {
 		// drop out if we have left the volume:
 		if (any(greaterThan(pt, vec3(1.))) || any(lessThan(pt, vec3(0.)))) break;
 
-		// voxel coordinate:
-		// (should this be quantized?)
-		vec3 P = pt * u_N;
-
-		vec4 p = texelFetch(u_tex, ivec3(P), 0); //texture(u_tex, pt);
+		// nearest voxel coordinate:
+		ivec3 P = ivec3(pt * u_N + 0.5);
+		vec4 p = texelFetch(u_tex, P, 0); //texture(u_tex, pt);
 		
-		float size = 0.1/u_N; // sphere size in texcoord units
+		float size = 0.05/u_N; // sphere size in texcoord units
 		float size2 = size*size;
 		vec3 c = p.xyz/u_N; // sphere center in texcoord units
 
@@ -113,6 +111,10 @@ void main() {
 		// (squared) distance from ray to sphere
 		if (tc < 0.) continue; // don't render things behind the ray origin
 		float d2 = dot(L, L) - tc*tc; 
+
+		// draw me a halo
+		result += vec4(1.*exp(-sqrt(d2/size2)));
+
 		// if d2 > size2 then the ray didn't get close enough to sphere to intersect
 		if (d2 > size2) continue;
 		// distance along ray between nearest point and intersection point
@@ -128,8 +130,11 @@ void main() {
 		//n = normalize(n);
 
 
-		result = vec4(n*0.5+0.5, 1.);
-		//result = vec4(d2 / size2);
+		vec3 col = vec3(n*0.5+0.5);
+
+
+		// draw me a solid:
+		result.rgb = col;
 		break;
 
 		// // relative vector from point to voxel:
