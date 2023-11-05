@@ -37,10 +37,10 @@ float rayBoxEntryDistance(vec3 ro, vec3 rd) {
 vec3 normal4(in vec3 p, in sampler3D tex, float eps) {
 	vec2 e = vec2(-eps, eps);
 	// tetra points
-	float t1 = texture(u_tex, p+e.yxx).x;
-	float t2 = texture(u_tex, p+e.xxy).x;
-	float t3 = texture(u_tex, p+e.xyx).x;
-	float t4 = texture(u_tex, p+e.yyy).x;
+	float t1 = texture(u_tex, p+e.yxx).w;
+	float t2 = texture(u_tex, p+e.xxy).w;
+	float t3 = texture(u_tex, p+e.xyx).w;
+	float t4 = texture(u_tex, p+e.yyy).w;
 	vec3 n = t1*e.yxx + t2*e.xxy + t3*e.xyx + t4*e.yyy;
 	return normalize(n);
 }
@@ -59,7 +59,7 @@ void main() {
 
 	// ok now step from t=0 to t=tmax
 	float a = 0.;
-	float dt = 0.1 / u_N;
+	float dt = 0.05 / u_N;
 	//float t0 = fract(tmax/dt);
 
 	float v = 0.;
@@ -69,17 +69,19 @@ void main() {
 	float t=0.;
 
 	// if we start off inside, skip ahead:
-	for (; t < tmax; t += dt) {
-		vec3 pt = ro + t*rd;
-		float c = texture(u_tex, pt).x;
-		if (c < iso) break;
-	}
+	// for (; t < tmax; t += dt) {
+	// 	vec3 pt = ro + t*rd;
+	// 	float c = texture(u_tex, pt).x;
+	// 	if (c < iso) break;
+	// }
+
+	float isInside = sign(texture(u_tex, ro).w - iso);
 
 	for (; t < tmax; t += dt) {
 		float weight = min(1., tmax-t);
 		//float weight = min(t, 1.);
 		vec3 pt = ro + t*rd;
-		float c = texture(u_tex, pt).x;
+		float c = texture(u_tex, pt).w;
 		//c = sqrt(c);
 		//v += max(c, 0.) * weight * 0.01;
 		v = max(v, c/2.);
@@ -96,10 +98,12 @@ void main() {
 		// a = mix(c1, a, opacity);
 
 		//a += 0.5*dt * weight;
-		if (c >= iso) {
+		// did we cross the surface?
+		if ((c - iso) * isInside <= 0.) {
+		//if (abs(c-iso) < dt) {
 			// actually probably want to estimate a refinement to `t` to get `c` closer to 0.5
 			float t0 = t-dt;
-			float c0 = texture(u_tex, ro + t0*rd).x;
+			float c0 = texture(u_tex, ro + t0*rd).w;
 			// we want the point `a` between t0 and t where the line from c0 to c is exactly 0.5
 			// 0.5 = c0 + a*(c - c0)  => a = (0.5-c0)/(c-c0) 
 			float a = (iso-c0)/(c-c0);
@@ -107,12 +111,30 @@ void main() {
 
 			vec3 pt = ro + ta*rd;
 			vec3 n = normal4(pt, u_tex, 0.005);
+			//n = normalize(n);
 
-			result += vec4(n*0.5+0.5, 1.);
+			//if (isInside < 0.)
+			//result += vec4(n*isInside*0.5+0.5, 1.);
 
+			result.rgb = texture(u_tex, pt).rgb;
+
+			// phongish
+			float ndotl = dot(n, normalize(vec3(1)));
+			ndotl = pow(max(0., ndotl), 1.0);
+			result = mix(result, result * vec4(1.-(ndotl)), 0.5);
+
+			// fresnelish
 			float ndotr = dot(n, rd);
-			ndotr = pow(abs(ndotr), 0.5);
-			result = mix(result, vec4(1.-abs(ndotr)), 0.6);
+			ndotr = pow(abs(ndotr), 1.);
+			result = mix(result, vec4(1.-abs(ndotr)), 0.3);
+
+			
+
+			// fade by distance:
+			//result *= 1./(1.+t);
+			//result *= exp(-2.*t);
+			// gamma by distance:
+			result = pow(result, vec4(t*3.));
 
 			break;
 		}

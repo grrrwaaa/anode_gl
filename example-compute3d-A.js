@@ -44,55 +44,69 @@ console.log("Number of invocations in a single local work group that may be disp
 
 
 let program = shaderman.computes.test3dA
+
 //console.log(program)
+
+// let tex = glutils.createTexture(gl, {
+// 	width: 512, height: 512, 
+// 	float: true,
+// })
 
 // 3d texture resolution NxNxN
 let N = 64 * 3
 // cube instances MxMxM
-let M = 16 
+//let M = 16 
 
 let tex3dA = glutils.createTexture3D(gl, { 
 	float:true, 
 	channels: 4,
 	width:N,  
 });
+//tex3dA.data.forEach((v,i,a) => a[i] = 0.2)
+//tex3dA.bind()
+// gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+// gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+// gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_WRAP_R, gl.REPEAT);
+//tex3dA.submit()
+
 let tex3dB = glutils.createTexture3D(gl, { 
 	float:true, 
 	channels: 4,
 	width:N,  
 });
 
-// lets make an instanced array of cubes:
-let cube = glutils.createVao(gl, glutils.makeCube({ min:-0.5/M, max:0.5/M, div: 2 }), shaderman.shaders.icubes.id)
-let cubes = glutils.createInstances(gl, [
-	{ name:"i_pos", components:4 },
-	{ name:"i_quat", components:4 },
-], M*M*M)
-// the .instances provides a convenient interface to the underlying arraybuffer
-cubes.instances.forEach((obj, i) => {
-	let x = 0.5 + i % M;
-	let y = 0.5 + Math.floor(i/M) % M;
-	let z = 0.5 + Math.floor(i/(M*M)) % M;
-	// each field is exposed as a corresponding typedarray view
-	// making it easy to use other libraries such as gl-matrix
-	// this is all writing into one contiguous block of binary memory for all instances (fast)
-	vec4.set(obj.i_pos, 
-		x/M,
-		y/M,
-		z/M,
-		1
-	);
-	quat.set(obj.i_quat, 0, 0, 0, 1);
-})
-cubes.bind().submit().unbind();
-// attach these instances to an existing VAO:
-cubes.attachTo(cube);
+// // lets make an instanced array of cubes:
+// let cube = glutils.createVao(gl, glutils.makeCube({ min:-0.5/M, max:0.5/M, div: 2 }), shaderman.shaders.icubes.id)
+// let cubes = glutils.createInstances(gl, [
+// 	{ name:"i_pos", components:4 },
+// 	{ name:"i_quat", components:4 },
+// ], M*M*M)
+// // the .instances provides a convenient interface to the underlying arraybuffer
+// cubes.instances.forEach((obj, i) => {
+// 	let x = 0.5 + i % M;
+// 	let y = 0.5 + Math.floor(i/M) % M;
+// 	let z = 0.5 + Math.floor(i/(M*M)) % M;
+// 	// each field is exposed as a corresponding typedarray view
+// 	// making it easy to use other libraries such as gl-matrix
+// 	// this is all writing into one contiguous block of binary memory for all instances (fast)
+// 	vec4.set(obj.i_pos, 
+// 		x/M,
+// 		y/M,
+// 		z/M,
+// 		1
+// 	);
+// 	quat.set(obj.i_quat, 0, 0, 0, 1);
+// })
+// cubes.bind().submit().unbind();
+// // attach these instances to an existing VAO:
+// cubes.attachTo(cube);
 
 let vol = glutils.createVao(gl, glutils.makeCube({ min:0, max:1, div: 128 }))
 
+let t = 0
 
 window.draw = function() {
-	let { t, dt, dim } = this;
+	let { dt, dim } = this;
 
 	let viewmatrix = mat4.create();
 	let projmatrix = mat4.create();
@@ -103,11 +117,18 @@ window.draw = function() {
 
 	let aspect = dim[0]/dim[1]
 	let near = 0.01, far = 10
-	let at = [0.5, 0.5, 0.5]
-	let d = 0.5 + 0.25*Math.sin(t * 0.25)
-	let h = at[1] + 0.125*Math.sin(t * 0.125)
-	let a = t / 8
-	let eye = [at[0] + d*Math.cos(a), h, at[2] + d*Math.sin(a)]
+	// let at = [0.5, 0.5, 0.5]
+	// let d = 0.5 + 0.25*Math.sin(t * 0.25)
+	// let h = at[1] + 0.125*Math.sin(t * 0.125)
+	// let a = t / 8
+	// let eye = [at[0] + d*Math.cos(a), h, at[2] + d*Math.sin(a)]
+	// mat4.lookAt(viewmatrix, eye, at, [0, 1, 0]);
+
+	let a = t*0.1
+	let eye = [ Math.sin(a)*0.4+0.5, Math.sin(a*1.3)*0.3 + 0.5, Math.cos(a*1.5)*0.4+0.5 ]
+	let at = [ Math.cos(a*1.2)*0.2+0.5, Math.sin(a*1.1)*0.1 + 0.5, Math.sin(a*1.4)*0.2+0.5 ]
+	let r = 0.5 + Math.sin(t);
+	
 	mat4.lookAt(viewmatrix, eye, at, [0, 1, 0]);
 	mat4.perspective(projmatrix, Math.PI*0.6, aspect, near, far);
 	
@@ -165,15 +186,16 @@ window.draw = function() {
 		gl.enable(gl.CULL_FACE);
 		gl.cullFace(gl.FRONT)
 
-		shaderman.shaders.vol.begin()
+		shaderman.shaders.ptvol.begin()
 			.uniform("u_viewmatrix", viewmatrix)
 			.uniform("u_projmatrix", projmatrix)
 			.uniform("u_modelmatrix", modelmatrix)
 			.uniform("u_modelmatrix_inverse", modelmatrix_inverse)
 			.uniform("u_viewmatrix_inverse", viewmatrix_inverse)
 			.uniform("u_projmatrix_inverse", projmatrix_inverse)
-			.uniform("u_N", M)
+			.uniform("u_N", N)
 			.uniform("u_tex", 0)
+			.uniform("iso", 0.5)
 		vol.bind().draw().unbind()
 		shaderman.shaders.vol.end();
 
@@ -183,7 +205,12 @@ window.draw = function() {
 	if (Math.floor(t+dt) > Math.floor(t)) {
 		console.log("fps", 1/dt)
 	}
+	t += dt;
 
 }
+
+shaderman.on('reload', () => {
+	t = 0;
+});
 
 Window.animate()

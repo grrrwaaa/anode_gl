@@ -44,32 +44,45 @@ void main() {
 
 	// GL_REPEAT wasn't working so seems like I have to do it this way
 	ivec3 C = voxel_coord;
-	ivec3 E = (voxel_coord + ivec3(1, 0, 0)) % idim;
-	ivec3 W = (voxel_coord + ivec3(-1, 0, 0)) % idim;
 
 	vec4 oldC = imageLoad(img_in, C);
-	vec4 oldE = imageLoad(img_in, E);
-	vec4 oldW = imageLoad(img_in, W);
+	vec4 oldx0 = imageLoad(img_in, (voxel_coord + ivec3(-1, 0, 0)) % idim);
+	vec4 oldx2 = imageLoad(img_in, (voxel_coord + ivec3( 1, 0, 0)) % idim);
+	vec4 oldy0 = imageLoad(img_in, (voxel_coord + ivec3( 0,-1, 0)) % idim);
+	vec4 oldy2 = imageLoad(img_in, (voxel_coord + ivec3( 0, 1, 0)) % idim);
+	vec4 oldz0 = imageLoad(img_in, (voxel_coord + ivec3( 0, 0,-1)) % idim);
+	vec4 oldz2 = imageLoad(img_in, (voxel_coord + ivec3( 0, 0, 1)) % idim);
 
-	vec4 old = mix(oldC, mix(oldE, oldW, 0.5), 0.) * 0.9999;
+	vec4 avg = (oldx0 + oldx2 + oldy0 + oldy2 + oldz0 + oldz2) / 6.;
+
+	vec4 old = mix(oldC, avg, vec4(0.01, 0.1, 1, 0.05));
 
 	// create a new position relative to time:
-	float a = t * 1.;
+	float a = t * 0.9;
 	vec3 pos = vec3(
 		sin(a), 
 		sin(a * 1.2), 
 		sin(a * 1.5)
 	) * 0.4 + 0.5;
-
-	pos += (hash31(t) - 0.5)*0.1;
-
+	pos += (hash31(t) - 0.5)*0.3;
 	pos *= dim;
+
+	float d = distance(coord, pos);
+	d = max(0., d - 0.);
 	
-    vec4 value = vec4(exp(-0.2*distance(coord, pos)));
+    vec4 value = vec4(exp(-0.2*d)) * (sin(t * 1.56425) + 0.5);
 
-	value = max(value, old);
 
-	value = clamp(value, 0., 1.);
+	//value = max(value, old);
+	value += old * 0.999;
+
+	value += 0.0015*sin(3.*(t + u.x + u.y + u.z));
+
+	
+	// color it:
+	value.rgb = mix(old.rgb, hash44(vec4(pos, t)).rgb, exp(-0.4*d)); 
+
+	//value = clamp(value, 0., 1.);
 	
     imageStore(img_out, voxel_coord, vec4(value));
 }
