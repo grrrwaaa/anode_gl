@@ -43,8 +43,6 @@ console.log("maximum size of work groups in each dimension", max_compute_work_gr
 console.log("Number of invocations in a single local work group that may be dispatched to a compute shader ", max_compute_work_group_invocations)
 
 
-let program = shaderman.computes.test3dA
-
 //console.log(program)
 
 // let tex = glutils.createTexture(gl, {
@@ -53,7 +51,7 @@ let program = shaderman.computes.test3dA
 // })
 
 // 3d texture resolution NxNxN
-let N = 64 * 3
+let N = 64 * 2
 // cube instances MxMxM
 //let M = 16 
 
@@ -70,6 +68,17 @@ let tex3dA = glutils.createTexture3D(gl, {
 //tex3dA.submit()
 
 let tex3dB = glutils.createTexture3D(gl, { 
+	float:true, 
+	channels: 4,
+	width:N,  
+});
+
+let fluid_tex3dA = glutils.createTexture3D(gl, { 
+	float:true, 
+	channels: 4,
+	width:N,  
+});
+let fluid_tex3dB = glutils.createTexture3D(gl, { 
 	float:true, 
 	channels: 4,
 	width:N,  
@@ -124,7 +133,7 @@ window.draw = function() {
 	// let eye = [at[0] + d*Math.cos(a), h, at[2] + d*Math.sin(a)]
 	// mat4.lookAt(viewmatrix, eye, at, [0, 1, 0]);
 
-	let a = t*0.1
+	let a = t*0.05
 	let eye = [ Math.sin(a)*0.4+0.5, Math.sin(a*1.3)*0.3 + 0.5, Math.cos(a*1.5)*0.4+0.5 ]
 	let at = [ Math.cos(a*1.2)*0.2+0.5, Math.sin(a*1.1)*0.1 + 0.5, Math.sin(a*1.4)*0.2+0.5 ]
 	let r = 0.5 + Math.sin(t);
@@ -142,14 +151,36 @@ window.draw = function() {
 		tex3dA = tex3dB;
 		tex3dB = tmp;
 	}
+	{
+		let tmp = fluid_tex3dA;
+		fluid_tex3dA = fluid_tex3dB;
+		fluid_tex3dB = tmp;
+	}
+
+	fluid_tex3dB.bind(3);
+	gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+	gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+	gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_WRAP_R, gl.REPEAT);
+	gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+	gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
 	
+	gl.bindImageTexture(2, fluid_tex3dA.id, 0, true, 0, gl.WRITE_ONLY, tex3dA.internalFormat);
+
+	shaderman.computes.fluid.begin()
+	.uniform("t", t)
+
+	gl.dispatchCompute(fluid_tex3dA.width, fluid_tex3dA.height, fluid_tex3dA.depth);
+
 	// void glBindImageTexture(GLuint unit, GLuint texture, GLint level, GLboolean layered, GLint layer, GLenum access, GLenum format);
 	// access can be READ_ONLY, WRITE_ONLY, or READ_WRITE
 	gl.bindImageTexture(1, tex3dB.id, 0, true, 0, gl.READ_ONLY, tex3dB.internalFormat);
 	gl.bindImageTexture(0, tex3dA.id, 0, true, 0, gl.WRITE_ONLY, tex3dA.internalFormat);
+
+	
+	//gl.memoryBarrier(gl.SHADER_IMAGE_ACCESS_BARRIER_BIT);
 	
 	// bind shader
-	program.begin()
+	shaderman.computes.particles.begin()
 	.uniform("t", t)
 	// this is how to run the shader, with X, Y, Z work groups
 	// here we run 1 work group per pixel (and z=1 because the image is 2D)
@@ -195,6 +226,7 @@ window.draw = function() {
 			.uniform("u_projmatrix_inverse", projmatrix_inverse)
 			.uniform("u_N", N)
 			.uniform("u_tex", 0)
+			.uniform("u_field_tex", 3)
 			.uniform("iso", 0.5)
 		vol.bind().draw().unbind()
 		shaderman.shaders.vol.end();
@@ -210,7 +242,7 @@ window.draw = function() {
 }
 
 shaderman.on('reload', () => {
-	t = 0;
+	//t = 0;
 });
 
 Window.animate()

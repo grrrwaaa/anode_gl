@@ -2,6 +2,7 @@
 precision mediump float;
 
 uniform sampler3D u_tex;
+uniform sampler3D u_field_tex;
 uniform float u_N;
 
 uniform float iso;
@@ -88,7 +89,7 @@ void main() {
 	// 	if (c < iso) break;
 	// }
 
-	float isInside = sign(texture(u_tex, ro).w - iso);
+	//float isInside = sign(texture(u_tex, ro).w - iso);
 
 	for (; t < tmax; t += dt) {
 		vec3 pt = ro + t*rd;
@@ -100,7 +101,7 @@ void main() {
 		ivec3 P = ivec3(pt * u_N + 0.5);
 		vec4 p = texelFetch(u_tex, P, 0); //texture(u_tex, pt);
 		
-		float size = 0.05/u_N; // sphere size in texcoord units
+		float size = 0.15/u_N; // sphere size in texcoord units
 		float size2 = size*size;
 		vec3 c = p.xyz/u_N; // sphere center in texcoord units
 
@@ -113,7 +114,7 @@ void main() {
 		float d2 = dot(L, L) - tc*tc; 
 
 		// draw me a halo
-		result += vec4(1.*exp(-sqrt(d2/size2)));
+		result += vec4(0.25*exp(-1.5*sqrt(d2/size2)));
 
 		// if d2 > size2 then the ray didn't get close enough to sphere to intersect
 		if (d2 > size2) continue;
@@ -130,7 +131,19 @@ void main() {
 		//n = normalize(n);
 
 
-		vec3 col = vec3(n*0.5+0.5);
+		//vec3 col = vec3(n*0.5+0.5);
+
+		vec3 col = (texture(u_field_tex, pt).rgb)*3.0*0.5 + 0.5;
+
+		// 	// phongish
+		float ndotl = dot(n, normalize(vec3(1)));
+		ndotl = pow(max(0., ndotl), 1.0);
+		col = mix(col, col * vec3(1.-(ndotl)), 0.5);
+
+		// 	// fresnelish
+		float ndotr = dot(n, rd);
+		ndotr = pow(abs(ndotr), 1.);
+		col = mix(col, vec3(1.-abs(ndotr)), 0.3);
 
 
 		// draw me a solid:
@@ -192,15 +205,7 @@ void main() {
 
 		// 	result.rgb = texture(u_tex, pt).rgb;
 
-		// 	// phongish
-		// 	float ndotl = dot(n, normalize(vec3(1)));
-		// 	ndotl = pow(max(0., ndotl), 1.0);
-		// 	result = mix(result, result * vec4(1.-(ndotl)), 0.5);
 
-		// 	// fresnelish
-		// 	float ndotr = dot(n, rd);
-		// 	ndotr = pow(abs(ndotr), 1.);
-		// 	result = mix(result, vec4(1.-abs(ndotr)), 0.3);
 
 			
 
