@@ -73,7 +73,7 @@ void main() {
 
 	// either the velocity or the pressure should be diffused, but not both
 	// I like blend=0 more, it gives more turbulence; 1 is more smoky
-    float blend = 0.;  
+    float blend = 1.;  
 
 	// new velocity derived from neighbourhood average
     energy.xyz = mix(p.xyz, avg.xyz, blend) + force;
@@ -82,7 +82,7 @@ void main() {
 	// optional decays
     // xy or z, don't need to do both
     // OUT.xy *= 0.99;
-    //energy.w *= 0.999;
+    energy.w *= 0.999;
 
 	// add force of gravity to my velocity
     //energy.y -= energy.w/idim.y;
@@ -102,7 +102,7 @@ void main() {
 	float r = 0.2;
 	if (d < r) {
 		vec3 disturb = normalize(0.5-c) + (hash44(vec4(pre*dim, t)).xyz - 0.5);
-		disturb *= 0.5; //*sin(t);
+		disturb *= 0.25; //*sin(t);
 		energy.xyz = mix(disturb, energy.xyz, d/r);
 	}
 
@@ -130,16 +130,27 @@ void main() {
     //     //energy.xyz = vec3(0);
     // }
 
-	if (P.x < 1. || P.x > idim.x-1.) {
-		energy.xyz = length(energy.xyz) * normalize(energy.xyz * vec3(0, 1, 1));
+	// fancy version: rotate vector along surface of 
+	// if (P.x < 1. || P.x > idim.x-1.) {
+	// 	energy.xyz = length(energy.xyz) * normalize(energy.xyz * vec3(0, 1, 1));
+	// }
+	// if (P.y < 1. || P.y > idim.y-1.) {
+	// 	energy.xyz = length(energy.xyz) * normalize(energy.xyz * vec3(1, 0, 1));
+	// }
+	// if (P.z < 1. || P.z > idim.z-1.) {
+	// 	energy.xyz = length(energy.xyz) * normalize(energy.xyz * vec3(1, 1, 0));
+	// }
+   
+   // dumb version:
+   	if (P.x < 1. || P.x > idim.x-1.) {
+		energy.x = 0.;
 	}
 	if (P.y < 1. || P.y > idim.y-1.) {
-		energy.xyz = length(energy.xyz) * normalize(energy.xyz * vec3(1, 0, 1));
+		energy.y = 0.;
 	}
 	if (P.z < 1. || P.z > idim.z-1.) {
-		energy.xyz = length(energy.xyz) * normalize(energy.xyz * vec3(1, 1, 0));
+		energy.a = 0.;
 	}
-   
 
 	// init:
 	if (t < 0.1) {

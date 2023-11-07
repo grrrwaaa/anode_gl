@@ -1958,6 +1958,7 @@ function makeQuad3D(options) {
     if (typeof max == "number") max = [max, max];
     let div = opt.div; if (div == undefined) div = 1;
     if (typeof div == "number") div = [div, div];
+
     let span = [max[0]-min[0], max[1]-min[1]];
     let step = [1/div[0], 1/div[1]];
     let vertices = [];
@@ -2055,9 +2056,12 @@ function makeLine(options) {
 	}
 }
 
-// TODO: this assumes triangle faces only; can we add support to turn quads into triangles?
-// TODO: autocenter & autonormalize?
-function geomFromOBJ(objcode) {
+function geomFromOBJ(objcode, options) {
+    // create a normal per face
+    let facenormals = options.facenormals
+    // do not re-use vertices, unique vertex per triangle point
+    // this is necessary for per face normals
+    let soup = facenormals || options.soup
 	let lines = objcode.split(/\r\n|\n/)
     let vertices = []
     let gvertices = []
@@ -2080,6 +2084,8 @@ function geomFromOBJ(objcode) {
             vertices.push([+match[1], +match[2], +match[3]])
 		} else if (line.substring(0,1) == "f") {
 			let face = []
+            let fn = [] // vertices for face normal calculation
+            let fncount = 0
 			let match
             // this only works for v/vt/vn input
 			let regex = /([0-9]+)\s*(\/\s*([0-9]*))?\s*(\/\s*([0-9]*))?/g
@@ -2089,7 +2095,7 @@ function geomFromOBJ(objcode) {
                 let N = match[5]
 				let name = `${V}/${T}/${N}`
 				let id = memo[name]
-			 	if (id == undefined) {
+			 	if (soup || id == undefined) {
 					// a new vertex/normal/texcoord combo, create a new entry for it
 					id = indexcount;
 					let v = vertices[(+V)-1]
@@ -2099,9 +2105,16 @@ function geomFromOBJ(objcode) {
                         gtexCoords.push(vt[0], vt[1])
                     }
                     if (N && normals.length) {
-                        let vn = normals[(+N)-1]
-                        gnormals.push(vn[0], vn[1], vn[2])
-                    }
+                        if (facenormals) {
+                            fn.push(v)
+                            //vec3.add(fn, fn, normals[(+N)-1])
+                            fncount++
+                        }
+                        else {
+                            let vn = normals[(+N)-1]
+                            gnormals.push(vn[0], vn[1], vn[2])
+                        }
+                    } 
 					memo[name] = id;
 					indexcount++;
 				}
@@ -2113,6 +2126,23 @@ function geomFromOBJ(objcode) {
 				}
  				face.push(id);
 			}
+            if (facenormals && fncount) {
+
+                // can't we just use the first 3 positions to get a normal
+                // then apply this for all?
+                let u = vec3.sub(vec3.create(), fn[1], fn[0])
+                //vec3.normalize(u, u)
+                let v = vec3.sub(vec3.create(), fn[2], fn[0])
+                //vec3.normalize(u, u)
+                let n = vec3.cross(vec3.create(), u, v)
+
+                //console.log(n)
+
+                vec3.normalize(n, n)
+                for (let i=0; i<fncount; i++) {
+                    gnormals.push(n[0], n[1], n[2])
+                }
+            }
 			for (let id of face) {
 				gindices.push(id);
 			}
@@ -2131,6 +2161,7 @@ function geomFromOBJ(objcode) {
     }
 	return geom
 }
+
 
 // m4 should be a mat4
 // geom should have vertexComponents 3+
@@ -2152,11 +2183,12 @@ function geomTransform(geom, m4) {
     }
 
     if (geom.normals) {
-        let m3 = mat3.create()
-        mat3.fromMat4(m3, m4)
+        let m3 = mat3.fromMat4(mat3.create(), m4)
+        let fr = mat3.frob(m3);
+        mat3.multiplyScalar(m3, m3, 1/fr)
         for (let i=0; i<geom.normals.length; i+=3) {
             let v = new Float32Array(geom.normals.buffer, i*4, 3);
-            vec2.transformMat3(v, v, m3)
+            vec3.transformMat3(v, v, m3)
         }
     }
     return geom

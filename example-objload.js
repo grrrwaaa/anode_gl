@@ -67,7 +67,7 @@ void main() {
 	gl_Position = u_projmatrix * u_viewmatrix * u_modelmatrix * vec4(vertex, 1);
 
 	v_color = vec4(a_normal*0.25+0.25, 1.);
-	v_color += vec4(a_texCoord*0.5, 0., 1.);
+	//v_color += vec4(a_texCoord*0.5, 0., 1.);
 }
 `,
 `#version 330
@@ -80,7 +80,12 @@ void main() {
 	outColor = v_color;
 }
 `);
-let geom = glutils.createVao(gl, glutils.geomFromOBJ(tetraOBJ), geomprogram.id);
+let tetra_geom = glutils.geomFromOBJ(tetraOBJ, { 
+	soup:true, 
+	facenormals:true 
+})
+//console.log(tetra_geom)
+let geom = glutils.createVao(gl, tetra_geom, geomprogram.id);
 
 let t = glfw.getTime();
 let fps = 60;
