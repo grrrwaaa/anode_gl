@@ -2344,10 +2344,10 @@ module.exports = {
     createQuadVao: createQuadVao,
     createInstances: createInstances,
 
-    makeFboWithDepth: makeFboWithDepth,
-    makeGbuffer: makeGbuffer,
-	createFBO: createFBO,
-	createSlab: createSlab,
+    makeFboWithDepth,
+    makeGbuffer,
+	createFBO,
+	createSlab,
 
 	makeCube,
     makeQuad,

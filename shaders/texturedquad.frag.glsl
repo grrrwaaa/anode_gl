@@ -5,6 +5,7 @@ uniform sampler2D u_albedo_tex;
 uniform float u_time;
 
 in vec2 v_uv;
+in vec3 v_normal;
 out vec4 outColor;
 
 void main() {

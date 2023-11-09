@@ -17,7 +17,4 @@ void main() {
 
 	v_uv = a_texCoord;
 	v_normal = mat3(u_modelmatrix) * a_normal;
-
-	// if using gl.POINTS:
-	gl_PointSize = 10.;
 }
