@@ -106,90 +106,12 @@ cubes.bind().submit().unbind();
 // attach these instances to an existing VAO:
 cubes.attachTo(cube);
 
-function frustumFromPerspective(fovy, aspect, near, far) {
-	let m = near * Math.tan(fovy/2)
-	return [-m*aspect, m*aspect, -m, m, near, far]
-}
-
-function perspectiveFromFrustum(l, r, b, t, near, far) {
-	// note, this assumes the camera is centered in the frame
-	// a frustum could be off-axis but the perspective parameters can't
-	let fovy = Math.atan2((t - b)/2, near)
-	let aspect = (l - r)/(t - b)
-	return [fovy, aspect, near, far]
-}
-
-// how to create a mat4 directly from a position vector and 3 unit axis vectors
-function viewFromUnitVectorsAndPosition(pos, ux, uy, uz) {
-	return [
-		...ux, 0, 
-		...uy, 0, 
-		...uz, 0, 
-		-pos[0], -pos[1], -pos[2], 1
-	]
-}
-
 function scene(projmatrix, viewmatrix) {
 	cubeprogram.begin()
 	.uniform("u_viewmatrix", viewmatrix)
 	.uniform("u_projmatrix", projmatrix)
 	cube.bind().drawInstanced(cubes.count).unbind()
 	cubeprogram.end();
-}
-
-// set a projection matrix and view matrix to render onto an arbitrary plane
-// viewmatrix is for the global camera
-// a, b, c are the bottom-left, bottom-right, top-left corners of the plane in world space
-// near, far are the near & far clip distances
-// returns [projmatrix, viewmatrix] you can use to render the scene through the plane
-function viewThroughPlane(viewmatrix, A, B, C, near, far) {
-	
-	// convert world-space plane to view space
-	let va = vec3.transformMat4(vec3.create(), A, viewmatrix) 
-	let vb = vec3.transformMat4(vec3.create(), B, viewmatrix)
-	let vc = vec3.transformMat4(vec3.create(), C, viewmatrix)
-
-	// get the right and up unit vectors of the plane in view space
-	let vr = vec3.sub(vec3.create(), vb, va)
-	let vu = vec3.sub(vec3.create(), vc, va)
-	vec3.normalize(vr, vr)
-	vec3.normalize(vu, vu)
-	// get the normal unit vector to the plane in view space
-	let vn = vec3.cross(vec3.create(), vr, vu)
-	vec3.normalize(vn, vn)
-	// we now have the plane's coordinate axes in view space
-
-	// Find the distance from the eye to screen plane
-	// by projecting one of these vectors along the plane normal 
-	// (inverted because normal points out of screen)
-	let d = -vec3.dot(va, vn);
-	// we need the distance so that we can adapt the plane's field of view accordingly
-	// the extents of the near plane are shrunk by perspective
-	// which just means divide by distance
-	let nd = near / d
-
-	// Find the extents of the frustum at the near plane.
-	// here we project the rays from eye to corner along the plane's coordinate axes
-	// this gives us the required off-axis shift in the plane
-	// then we scale them by our new near 
-	let l = vec3.dot(vr, va) * nd;
-	let r = vec3.dot(vr, vb) * nd;
-	let b = vec3.dot(vu, va) * nd;
-	let t = vec3.dot(vu, vc) * nd;
-	let projmatrix_plane = mat4.frustum(mat4.create(), l, r, b, t, near, far) 
-
-	// next take us back from the plane to the world (the viewmatrix)
-	// rotate the out of the plane's coordinate system
-	let rotm = mat4.fromValues(
-		vr[0], vu[0], vn[0], 0,
-		vr[1], vu[1], vn[1], 0,
-		vr[2], vu[2], vn[2], 0,
-		0, 0, 0, 1
-	)
-	// and then relative to world space
-	let viewmatrix_plane = mat4.multiply(mat4.create(), rotm, viewmatrix)
-
-	return [projmatrix_plane, viewmatrix_plane]
 }
 
 window.draw = function() {
@@ -259,7 +181,7 @@ window.draw = function() {
 		// derive new projection & view matrices for the plane
 		// this depends on the global viewmatrix to take into account eye position & orientation
 		// and the near/far for depth clipping
-		scene(...viewThroughPlane(viewmatrix, a, b, c, near, far))
+		scene(...glutils.viewThroughPlane(viewmatrix, a, b, c, near, far))
 	}
 	fbo.end()
 

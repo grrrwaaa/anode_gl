@@ -2321,28 +2321,105 @@ function quat_rotation_to(out, q, dir, fwd=[0,0,-1]) {
     return texture;
 }
 
-module.exports = {
-	createShader: createShader,
-	createProgram: createProgram,
-    createComputeProgram,
-	makeProgram: makeProgram,
-    makeComputeProgram,
+function frustumFromPerspective(fovy, aspect, near, far) {
+	let m = near * Math.tan(fovy/2)
+	return [-m*aspect, m*aspect, -m, m, near, far]
+}
 
-	makeProgramFromCode: makeProgramFromCode,
-	uniformsFromCode: uniformsFromCode,
+function perspectiveFromFrustum(l, r, b, t, near, far) {
+	// note, this assumes the camera is centered in the frame
+	// a frustum could be off-axis but the perspective parameters can't
+	let fovy = Math.atan2((t - b)/2, near)
+	let aspect = (l - r)/(t - b)
+	return [fovy, aspect, near, far]
+}
+
+// how to create a mat4 directly from a position vector and 3 unit axis vectors
+function viewFromUnitVectorsAndPosition(pos, ux, uy, uz) {
+	return [
+		...ux, 0, 
+		...uy, 0, 
+		...uz, 0, 
+		-pos[0], -pos[1], -pos[2], 1
+	]
+}
+
+// set a projection matrix and view matrix to render onto an arbitrary plane
+// viewmatrix is for the global camera
+// a, b, c are the bottom-left, bottom-right, top-left corners of the plane in world space
+// near, far are the near & far clip distances
+// returns [projmatrix, viewmatrix] you can use to render the scene through the plane
+function viewThroughPlane(viewmatrix, A, B, C, near, far) {
 	
-	makeBuffer: makeBuffer,
+	// convert world-space plane to view space
+	let va = vec3.transformMat4(vec3.create(), A, viewmatrix) 
+	let vb = vec3.transformMat4(vec3.create(), B, viewmatrix)
+	let vc = vec3.transformMat4(vec3.create(), C, viewmatrix)
 
-    loadTexture: loadTexture,
-    createTexture: createTexture,
-	createPixelTexture: createPixelTexture,
-	createCheckerTexture: createCheckerTexture,
-    createTexture3D: createTexture3D,
+	// get the right and up unit vectors of the plane in view space
+	let vr = vec3.sub(vec3.create(), vb, va)
+	let vu = vec3.sub(vec3.create(), vc, va)
+	vec3.normalize(vr, vr)
+	vec3.normalize(vu, vu)
+	// get the normal unit vector to the plane in view space
+	let vn = vec3.cross(vec3.create(), vr, vu)
+	vec3.normalize(vn, vn)
+	// we now have the plane's coordinate axes in view space
+
+	// Find the distance from the eye to screen plane
+	// by projecting one of these vectors along the plane normal 
+	// (inverted because normal points out of screen)
+	let d = -vec3.dot(va, vn);
+	// we need the distance so that we can adapt the plane's field of view accordingly
+	// the extents of the near plane are shrunk by perspective
+	// which just means divide by distance
+	let nd = near / d
+
+	// Find the extents of the frustum at the near plane.
+	// here we project the rays from eye to corner along the plane's coordinate axes
+	// this gives us the required off-axis shift in the plane
+	// then we scale them by our new near 
+	let l = vec3.dot(vr, va) * nd;
+	let r = vec3.dot(vr, vb) * nd;
+	let b = vec3.dot(vu, va) * nd;
+	let t = vec3.dot(vu, vc) * nd;
+	let projmatrix_plane = mat4.frustum(mat4.create(), l, r, b, t, near, far) 
+
+	// next take us back from the plane to the world (the viewmatrix)
+	// rotate the out of the plane's coordinate system
+	let rotm = mat4.fromValues(
+		vr[0], vu[0], vn[0], 0,
+		vr[1], vu[1], vn[1], 0,
+		vr[2], vu[2], vn[2], 0,
+		0, 0, 0, 1
+	)
+	// and then relative to world space
+	let viewmatrix_plane = mat4.multiply(mat4.create(), rotm, viewmatrix)
+
+	return [projmatrix_plane, viewmatrix_plane]
+}
+
+module.exports = {
+	createShader,
+	createProgram,
+    createComputeProgram,
+	makeProgram,
+    makeComputeProgram,
+	makeProgramFromCode,
+	uniformsFromCode,
+	
+	makeBuffer,
+
+    loadTexture,
+    createTexture,
+	createPixelTexture,
+	createCheckerTexture,
+    createTexture3D,
     img2tex,
 
-	createVao: createVao,
-    createQuadVao: createQuadVao,
-    createInstances: createInstances,
+	createVao,
+    createQuadVao,
+    createInstances,
 
     makeFboWithDepth,
     makeGbuffer,
@@ -2364,7 +2441,13 @@ module.exports = {
     quat_unrotate,
     quat_rotation_to,
 
-    ok: ok,
+    
+    frustumFromPerspective,
+    perspectiveFromFrustum,
+    viewFromUnitVectorsAndPosition,
+    viewThroughPlane,
+
+    ok,
     
     requestAnimationFrame: function(callback, delay=1000/60) {
         let t0 = process.hrtime();
