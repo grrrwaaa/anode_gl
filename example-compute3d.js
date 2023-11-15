@@ -1,3 +1,6 @@
+const fs = require("fs"), 
+	path = require("path")
+
 const { vec2, vec3, vec4, quat, mat2, mat2d, mat3, mat4} = require("gl-matrix")
 
 module.paths.push(__dirname)
@@ -6,7 +9,6 @@ const gl = require('gles3.js'),
     Window = require("window.js"),
 	glutils = require('glutils.js'),
 	Shaderman = require('shaderman.js')
-const { CON_0_ATI } = require("./gles3")
 
 let window = new Window({
 	width: 1024,
@@ -103,6 +105,31 @@ cubes.attachTo(cube);
 
 let vol = glutils.createVao(gl, glutils.makeCube({ min:0, max:1, div: 128 }))
 
+// render destination
+const export_dim = [1024, 1024]
+let export_gbo = glutils.makeGbuffer(gl, ...export_dim, [
+    { float: false, mipmap: false, wrap: gl.CLAMP_TO_EDGE },
+    { float: false, mipmap: false, wrap: gl.CLAMP_TO_EDGE },
+    { float: false, mipmap: false, wrap: gl.CLAMP_TO_EDGE },
+])
+
+function dataFlipY(buf, width, height) {
+    let buf1 = new Uint8Array(width*height*4)
+    for (let y=0; y<height; y++) {
+        for (let x=0; x<width; x++) {
+            let idx = (y*width+x)*4
+            let idx1 = ((height-1-y)*width+x)*4
+            buf1[idx1+0] = buf[idx+0]
+            buf1[idx1+1] = buf[idx+1]
+            buf1[idx1+2] = buf[idx+2]
+            buf1[idx1+3] = buf[idx+3]
+        }
+    }
+    return buf1
+}
+
+
+let saveFrame = false;
 
 window.draw = function() {
 	let { t, dt, dim } = this;
@@ -161,50 +188,105 @@ window.draw = function() {
 	gl.memoryBarrier(gl.SHADER_IMAGE_ACCESS_BARRIER_BIT);
 	//gl.memoryBarrier(gl.ALL_BARRIER_BITS);
 
+	// render offscreen:
+	export_gbo.begin() 
+	{
+		const { width, height, data } = export_gbo
+		const dim = [width, height]
+		gl.viewport(0, 0, dim[0], dim[1]);
+		gl.clearColor(0., 0., 0., 1);
+		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+		gl.enable(gl.DEPTH_TEST)
+
+		tex3dA.bind()
+
+		if (0) {
+			shaderman.shaders.icubes.begin()
+			.uniform("u_modelmatrix", modelmatrix)
+			.uniform("u_viewmatrix", viewmatrix)
+			.uniform("u_projmatrix", projmatrix)
+			cube.bind().drawInstanced(cubes.count)
+		} else {
+	
+			// use back-face culling if you want to render from inside the cloud
+			// this would be easier if the entire thing was handled by a cloud-pass, e.g. in gbuffer
+			// then the near-plane origin & ray direction are in the shader pass,
+			// the front & rear face intersections can be computed by the bounding box using model & view matrices
+			// and any depth-buffer terminations can be handled in the same way
+			gl.enable(gl.CULL_FACE);
+			gl.cullFace(gl.FRONT)
+	
+			shaderman.shaders.vol.begin()
+				.uniform("u_viewmatrix", viewmatrix)
+				.uniform("u_projmatrix", projmatrix)
+				.uniform("u_modelmatrix", modelmatrix)
+				.uniform("u_modelmatrix_inverse", modelmatrix_inverse)
+				.uniform("u_viewmatrix_inverse", viewmatrix_inverse)
+				.uniform("u_projmatrix_inverse", projmatrix_inverse)
+				.uniform("u_N", M)
+				.uniform("u_tex", 0)
+				.uniform("iso", 0.5)
+			vol.bind().draw().unbind()
+			shaderman.shaders.vol.end();
+	
+			gl.disable(gl.CULL_FACE);
+		}
+
+		if (saveFrame) {
+			export_gbo
+				.readPixels(0)
+				.readPixels(1)
+				.readPixels(2)
+			
+			const pnglib = require("pngjs").PNG
+			fs.writeFileSync(`temp/color.png`, pnglib.sync.write({
+				width, height, data: dataFlipY(data[0], width, height)
+				//depth: 16, interlace: false, palette: false, color: false, alpha: true, bpp: 2, colorType: 4,
+			}))
+			fs.writeFileSync(`temp/depth.png`, pnglib.sync.write({
+				width, height, data: dataFlipY(data[1], width, height)
+				//depth: 16, interlace: false, palette: false, color: false, alpha: true, bpp: 2, colorType: 4,
+			}))
+			fs.writeFileSync(`temp/normal.png`, pnglib.sync.write({
+				width, height, data: dataFlipY(data[2], width, height)
+				//depth: 16, interlace: false, palette: false, color: false, alpha: true, bpp: 2, colorType: 4,
+			}))
+		}
+	}
+	export_gbo.end()
+
 	gl.viewport(0, 0, dim[0], dim[1]);
 	gl.clearColor(0., 0., 0., 1);
 	gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 	gl.enable(gl.DEPTH_TEST)
 
-
-	tex3dA.bind()
-
-	if (0) {
-		shaderman.shaders.icubes.begin()
-		.uniform("u_modelmatrix", modelmatrix)
-		.uniform("u_viewmatrix", viewmatrix)
-		.uniform("u_projmatrix", projmatrix)
-		cube.bind().drawInstanced(cubes.count)
-	} else {
-
-		// use back-face culling if you want to render from inside the cloud
-		// this would be easier if the entire thing was handled by a cloud-pass, e.g. in gbuffer
-		// then the near-plane origin & ray direction are in the shader pass,
-		// the front & rear face intersections can be computed by the bounding box using model & view matrices
-		// and any depth-buffer terminations can be handled in the same way
-		gl.enable(gl.CULL_FACE);
-		gl.cullFace(gl.FRONT)
-
-		shaderman.shaders.vol.begin()
-			.uniform("u_viewmatrix", viewmatrix)
-			.uniform("u_projmatrix", projmatrix)
-			.uniform("u_modelmatrix", modelmatrix)
-			.uniform("u_modelmatrix_inverse", modelmatrix_inverse)
-			.uniform("u_viewmatrix_inverse", viewmatrix_inverse)
-			.uniform("u_projmatrix_inverse", projmatrix_inverse)
-			.uniform("u_N", M)
-			.uniform("u_tex", 0)
-			.uniform("iso", 0.5)
-		vol.bind().draw().unbind()
-		shaderman.shaders.vol.end();
-
-		gl.disable(gl.CULL_FACE);
-	}
+	export_gbo.bind()
+	shaderman.shaders.show.begin()
+	quad_vao.bind().draw()
 
 	if (Math.floor(t+dt) > Math.floor(t)) {
 		console.log("fps", 1/dt)
 	}
 
+	saveFrame = false;
+
 }
+
+window.onpointerbutton = function(button, action, mods) {
+	console.log(button, action, mods)
+}
+
+window.onkey = function(key, scan, down, mod) {
+	if (down) {
+		if (key == 83) {
+			saveFrame = true;
+		} else {
+			console.log(key, scan, down, mod)
+		}
+	}
+	
+}
+
+
 
 Window.animate()

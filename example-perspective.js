@@ -181,7 +181,9 @@ window.draw = function() {
 		// derive new projection & view matrices for the plane
 		// this depends on the global viewmatrix to take into account eye position & orientation
 		// and the near/far for depth clipping
-		scene(...glutils.viewThroughPlane(viewmatrix, a, b, c, near, far))
+		let [proj, view] = glutils.viewThroughPlane(viewmatrix, a, b, c, near, far)
+
+		scene(proj, view)
 	}
 	fbo.end()
 

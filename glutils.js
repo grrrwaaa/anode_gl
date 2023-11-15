@@ -2058,6 +2058,7 @@ function makeLine(options) {
 
 function geomFromOBJ(objcode, options) {
     // create a normal per face
+    options = options || {}
     let facenormals = options.facenormals
     // do not re-use vertices, unique vertex per triangle point
     // this is necessary for per face normals

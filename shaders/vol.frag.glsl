@@ -3,8 +3,9 @@ precision mediump float;
 
 uniform sampler3D u_tex;
 uniform float u_N;
-
 uniform float iso;
+uniform mat4 u_viewmatrix;
+
 
 in vec4 v_color;
 in vec3 v_normal;
@@ -14,7 +15,9 @@ in vec3 v_viewpos;
 in vec3 v_debug;
 in vec3 v_ro, v_rd, v_re;
 
-out vec4 outColor;
+layout(location = 0) out vec4 out_color;
+layout(location = 1) out vec4 out_depth;
+layout(location = 2) out vec4 out_normal;
 
 // assume box b:  0,0,0 to 1,1,1
 float rayBoxExitDistance(vec3 ro, vec3 rd) {
@@ -64,7 +67,9 @@ void main() {
 
 	float v = 0.;
 
-	vec4 result = vec4(0.);
+	out_color = vec4(0, 0, 0, 1);
+	out_depth = vec4(0, 0, 0, 1);
+	out_normal = vec4(0.5, 0.5, 1, 1);
 
 	float t=0.;
 
@@ -110,66 +115,71 @@ void main() {
 			float ta = t0 + a*(t-t0);
 
 			vec3 pt = ro + ta*rd;
+
+			// this is normal in world space
 			vec3 n = normal4(pt, u_tex, 0.005);
+			vec3 vn = mat3(u_viewmatrix) * n;
 			//n = normalize(n);
 
 			//if (isInside < 0.)
-			//result += vec4(n*isInside*0.5+0.5, 1.);
+			//out_color += vec4(n*isInside*0.5+0.5, 1.);
 
-			result.rgb = texture(u_tex, pt).rgb;
+			out_color.rgb = texture(u_tex, pt).rgb;
 
 			// phongish
 			float ndotl = dot(n, normalize(vec3(1)));
 			ndotl = pow(max(0., ndotl), 1.0);
-			result = mix(result, result * vec4(1.-(ndotl)), 0.5);
+			out_color = mix(out_color, out_color * vec4(1.-(ndotl)), 0.5);
 
 			// fresnelish
 			float ndotr = dot(n, rd);
 			ndotr = pow(abs(ndotr), 1.);
-			result = mix(result, vec4(1.-abs(ndotr)), 0.3);
+			out_color = mix(out_color, vec4(1.-abs(ndotr)), 0.3);
 
 			
 
 			// fade by distance:
-			//result *= 1./(1.+t);
-			//result *= exp(-2.*t);
+			//out_color *= 1./(1.+t);
+			//out_color *= exp(-2.*t);
 			// gamma by distance:
-			result = pow(result, vec4(t*3.));
+			out_color = pow(out_color, vec4(t*3.));
+			out_color.a = 1.;
+
+			float d = 1.-t0/tmax;
+			out_depth = vec4(d, d, d, 1.);
+			out_normal = vec4(vn*-0.5+0.5, 1.);
 
 			break;
 		}
 	}
 
-	a = t < tmax ? 1. : 0. ;
+	//a = t < tmax ? 1. : 0. ;
+	//out_color = vec4(v_ro, 1.);
 
-	
-
-	//outColor = vec4(v_ro, 1.);
-
-	// outColor = vec4(n*0.5+0.5, 1.);
+	// out_color = vec4(n*0.5+0.5, 1.);
 	// float ndotr = dot(n, rd);
 	// ndotr = pow(abs(ndotr), 0.5);
-	// outColor = vec4(1.-abs(ndotr) );
+	// out_color = vec4(1.-abs(ndotr) );
 
 	//a = 1. - exp(-(a)/tmax);
 	//a = 1.-exp(a/tmax);
 
-	outColor = vec4(v_tc, 0.2);
+	//out_color = vec4(v_tc, 0.2);
 	// float v = texture(u_tex, v_tc).r;
-	// outColor = vec4(rd, 0.5);
-	//outColor *= vec4(tmax);
-	//outColor *= vec4(a);
-	// outColor = vec4(0.1);
-	// outColor = vec4(v_normal*0.5+0.5, 1.);
-	//outColor = vec4(tmax);
+	// out_color = vec4(rd, 0.5);
+	//out_color *= vec4(tmax);
+	//out_color *= vec4(a);
+	// out_color = vec4(0.1);
+	// out_color = vec4(v_normal*0.5+0.5, 1.);
+	//out_color = vec4(tmax);
 
-	outColor = vec4(v );
-	outColor = result;
-	// outColor = v < 1. ? vec4(v) : outColor;
+	//out_color = vec4(v );
+	//out_color = out_color;
+	// out_color = v < 1. ? vec4(v) : out_color;
 
-	//outColor = vec4(n, 1.);
+	//out_color = vec4(n, 1.);
 
-	// outColor = vec4(v_tc, 0.2);
-	//outColor = vec4(v_eyepos, 1);
-	//outColor = vec4(v_debug, 1.);
+	// out_color = vec4(v_tc, 0.2);
+	//out_color = vec4(v_eyepos, 1);
+	//out_color = vec4(v_debug, 1.);
 }

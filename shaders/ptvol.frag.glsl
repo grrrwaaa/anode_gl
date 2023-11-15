@@ -101,7 +101,7 @@ void main() {
 		ivec3 P = ivec3(pt * u_N + 0.5);
 		vec4 p = texelFetch(u_tex, P, 0); //texture(u_tex, pt);
 		
-		float size = 0.15/u_N; // sphere size in texcoord units
+		float size = 0.125/u_N; // sphere size in texcoord units
 		float size2 = size*size;
 		vec3 c = p.xyz/u_N; // sphere center in texcoord units
 
@@ -114,7 +114,7 @@ void main() {
 		float d2 = dot(L, L) - tc*tc; 
 
 		// draw me a halo
-		result += vec4(0.25*exp(-1.5*sqrt(d2/size2)));
+		//result += vec4(exp(-2.*sqrt(d2/size2)));
 
 		// if d2 > size2 then the ray didn't get close enough to sphere to intersect
 		if (d2 > size2) continue;

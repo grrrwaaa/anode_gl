@@ -61,7 +61,7 @@ void main() {
     // in each axis consider a couple of steps:
     // if particle.xy there is actually closer to our pixel, use that particle instead
     else {
-        int N=2;
+		int N=2;
 		for (int z=-N; z<N; z++) {
         	for (int y=-N; y<=N; y++) {
             	for (int x=-N; x<N; x++) {
@@ -83,11 +83,12 @@ void main() {
     // careful here: all calculations should be in terms of `p` only
     // if you use pixel locations, it will spawn new siblings of the particle
     //p.zw = rotate2(p.zw, 0.02* rand(p.xy));
+	float speed = 1.;
     vec3 vel;
 	//vel += 0.5*(hash44(vec4(p.xyz, t)).xyz - 0.5);
 	//vel += sin(2.*0.1*(p.yzx + t));
 	vel = texture(fluid_tex, (p.xyz+0.5)/dim).xyz; //imageLoad(fluid_in, voxel_coord).xyz;
-    p.xyz += vel;
+    p.xyz += vel * speed;
   
 
 	// if particle is too far away:

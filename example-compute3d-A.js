@@ -84,33 +84,17 @@ let fluid_tex3dB = glutils.createTexture3D(gl, {
 	width:N,  
 });
 
-// // lets make an instanced array of cubes:
-// let cube = glutils.createVao(gl, glutils.makeCube({ min:-0.5/M, max:0.5/M, div: 2 }), shaderman.shaders.icubes.id)
-// let cubes = glutils.createInstances(gl, [
-// 	{ name:"i_pos", components:4 },
-// 	{ name:"i_quat", components:4 },
-// ], M*M*M)
-// // the .instances provides a convenient interface to the underlying arraybuffer
-// cubes.instances.forEach((obj, i) => {
-// 	let x = 0.5 + i % M;
-// 	let y = 0.5 + Math.floor(i/M) % M;
-// 	let z = 0.5 + Math.floor(i/(M*M)) % M;
-// 	// each field is exposed as a corresponding typedarray view
-// 	// making it easy to use other libraries such as gl-matrix
-// 	// this is all writing into one contiguous block of binary memory for all instances (fast)
-// 	vec4.set(obj.i_pos, 
-// 		x/M,
-// 		y/M,
-// 		z/M,
-// 		1
-// 	);
-// 	quat.set(obj.i_quat, 0, 0, 0, 1);
-// })
-// cubes.bind().submit().unbind();
-// // attach these instances to an existing VAO:
-// cubes.attachTo(cube);
-
 let vol = glutils.createVao(gl, glutils.makeCube({ min:0, max:1, div: 128 }))
+
+// render destination
+const export_dim = [1024, 1024]
+let export_gbo = glutils.makeGbuffer(gl, ...export_dim, [
+    { float: false, mipmap: false, wrap: gl.CLAMP_TO_EDGE },
+    { float: false, mipmap: false, wrap: gl.CLAMP_TO_EDGE },
+    { float: false, mipmap: false, wrap: gl.CLAMP_TO_EDGE },
+])
+
+
 
 let t = 0
 
@@ -193,21 +177,17 @@ window.draw = function() {
 	gl.memoryBarrier(gl.SHADER_IMAGE_ACCESS_BARRIER_BIT);
 	//gl.memoryBarrier(gl.ALL_BARRIER_BITS);
 
-	gl.viewport(0, 0, dim[0], dim[1]);
-	gl.clearColor(0., 0., 0., 1);
-	gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-	gl.enable(gl.DEPTH_TEST)
+	// render offscreen:
+	export_gbo.begin() 
+	{
+		const { width, height } = export_gbo
+		const dim = [width, height]
+		gl.viewport(0, 0, dim[0], dim[1]);
+		gl.clearColor(0., 0., 0., 1);
+		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+		gl.enable(gl.DEPTH_TEST)
 
-
-	tex3dA.bind()
-
-	if (0) {
-		shaderman.shaders.icubes.begin()
-		.uniform("u_modelmatrix", modelmatrix)
-		.uniform("u_viewmatrix", viewmatrix)
-		.uniform("u_projmatrix", projmatrix)
-		cube.bind().drawInstanced(cubes.count)
-	} else {
+		tex3dA.bind()
 
 		// use back-face culling if you want to render from inside the cloud
 		// this would be easier if the entire thing was handled by a cloud-pass, e.g. in gbuffer
@@ -233,13 +213,34 @@ window.draw = function() {
 
 		gl.disable(gl.CULL_FACE);
 	}
+	export_gbo.end()
 
+	gl.viewport(0, 0, dim[0], dim[1]);
+	gl.clearColor(0., 0., 0., 1);
+	gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+	gl.enable(gl.DEPTH_TEST)
+
+
+	export_gbo.bind()
+	shaderman.shaders.show.begin()
+	quad_vao.bind().draw()
+
+	
 	if (Math.floor(t+dt) > Math.floor(t)) {
 		console.log("fps", 1/dt)
 	}
 	t += dt;
 
 }
+
+window.onpointerbutton = function(button, action, mods) {
+	console.log(button, action, mods)
+}
+
+window.onkey = function(key, scan, down, mod) {
+	console.log(key, scan, down, mod)
+}
+
 
 shaderman.on('reload', () => {
 	//t = 0;
