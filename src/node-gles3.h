@@ -351,6 +351,21 @@ napi_value GetBufferParameteri64v(napi_env env, napi_callback_info info) {
 	return (status == napi_ok) ? result_value : nullptr;
 }
 
+napi_value GetTexImage(napi_env env, napi_callback_info info) {
+	napi_status status = napi_ok;
+	napi_value args[7];
+	size_t argc = checkArgCount(env, info, args, 5, 5);
+	GLenum target = getUint32(env, args[0]);
+	GLint level = getInt32(env, args[1]);
+	GLenum format = getUint32(env, args[2]);
+	GLenum type = getUint32(env, args[3]);
+	void * data = nullptr;
+	status = getTypedArray(env, args[4], *(void **)&data);
+	if (status != napi_ok) return nullptr;
+	// void glGetTexImage(	GLenum target, GLint level, GLenum format, GLenum type, void * pixels);
+	glGetTexImage(target, level, format, type, data);
+	return args[4];
+}
 
 napi_value GetProgramInfoLog(napi_env env, napi_callback_info info) {
 	napi_status status = napi_ok;

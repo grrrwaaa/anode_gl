@@ -62,8 +62,8 @@ window.draw = function() {
 	let { t, dt, dim } = this;
 	let aspect = dim[0]/dim[1]
 
-	let test = ((Math.floor(t/2) % 3) == 1) ? 1 : 0
-	let showflow = ((Math.floor(t/2) % 3) == 2) ? 1 : 0
+	let test = ((Math.floor(t/6) % 3) == 1) ? 1 : 0
+	let showflow = ((Math.floor(t/6) % 3) == 2) ? 1 : 0
 
 	let modelmatrix = mat4.create()
 	let viewmatrix = mat4.create()

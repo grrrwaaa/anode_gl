@@ -696,6 +696,40 @@ function createTexture3D(gl, opt={}) {
             gl.deleteTextures(this.id)
         },
 
+        // copy texture back to CPU
+        // must bind() first!
+        getData() {
+            gl.getTexImage(gl.TEXTURE_3D, 0, this.format, this.type, this.data)
+            return this;
+        },
+
+        writeFileSync(filepath) {
+            this.bind().getData()
+            fs.writeFileSync(filepath, Buffer.from(this.data.buffer))
+            console.log("wrote", filepath)
+        },
+
+        writeFile(filepath) {
+            this.bind().getData()
+            fs.writeFile(filepath, Buffer.from(this.data.buffer), ()=>{
+                console.log("wrote", filepath)
+            })
+        },
+
+        readFileSync(filepath) {
+            if (fs.existsSync(filepath)) {
+                // load it:
+                const loadedBuffer = fs.readFileSync(filepath)
+                if (this.isFloat) {
+                    this.data = new Float32Array(loadedBuffer.buffer);
+                } else {
+                    this.data = new Uint8Array(loadedBuffer.buffer);
+                }
+                this.bind().submit()
+                console.log("read", filepath)
+            }
+        },
+
         // TODO read / readInto methods for accessing underlying data
         read(pos) {
             let x = Math.floor(pos[0]);
@@ -936,8 +970,8 @@ function makeGbuffer(gl, width=1024, height=1024, config=[
             return this;
         },
         // must bind first
-        submit(texture=0) {
-            gl.texImage2D(gl.TEXTURE_2D, 0, config[texture].internalFormat, this.width, this.height, 0, config[texture].format, config[texture].type, this.data[texture]);
+        submit(texture=0, data) {
+            gl.texImage2D(gl.TEXTURE_2D, 0, config[texture].internalFormat, this.width, this.height, 0, config[texture].format, config[texture].type, data || this.data[texture]);
             if (config[texture].mipmap) gl.generateMipmap(gl.TEXTURE_2D);
             return this;
         },
@@ -2214,7 +2248,7 @@ function geomAppend(self, other) {
     // indicies are a special case:
     if (self.indices && other.indices) {
         const ni = self.indices.length
-        const offset = self.vertices.length/3;
+        const offset = self.vertices.length/self.vertexComponents;
         const ar = new Uint32Array(ni + other.indices.length)
         ar.set(self.indices)
         for (let i=0; i<other.indices.length; i++) {
