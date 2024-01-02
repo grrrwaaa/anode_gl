@@ -149,7 +149,7 @@ class Window {
 		glfw.setCursorPosCallback(this.window, (window, px, py) => {
 			let dim = glfw.getWindowSize(window)
 			this.pointer.pos[0] = px/dim[0]
-			this.pointer.pos[1] = px/dim[1]
+			this.pointer.pos[1] = py/dim[1]
 
 			if (this.onpointermove) this.onpointermove(2*px/dim[0] - 1, -2*py/dim[1] + 1);
 		})
