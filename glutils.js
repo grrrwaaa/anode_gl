@@ -1106,7 +1106,7 @@ function createFBO(gl, width=1024, height=1024, floatingpoint=false) {
     return fbo;
 }
 
-// geom should have vertices, normals, indices
+// geom should have vertices, can also have normals, indices, perhaps also vertexComponents
 // if no program is given
 // the attributes are laid out as follows:
 // 0: position (vec2 or vec3 depending on geometry)
@@ -1322,7 +1322,7 @@ function createVao(gl, geom, program) {
         setAttributes(buffer, bytestride, bufferFields, instanced) {
             gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
             for (let field of bufferFields) {
-                const attrLoc = gl.getAttribLocation(this.program, field.name);
+                const attrLoc = field.location != undefined ? field.location : gl.getAttribLocation(this.program, field.name);
                 const normalize = false;
                 const bytesize = field.bytesize / field.components;
                 // watch out: if field.componnents > 4, it occupies several attribute slots

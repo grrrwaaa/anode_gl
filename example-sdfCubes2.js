@@ -662,9 +662,9 @@ void main() {
 	
 	// for deadzone:
 	if (contact == 0) {
-		//outColor += vec4(0.15); // show bounding box
-		//gl_FragDepth = 0.9999;
-		discard;
+		outColor += vec4(0.25); // show bounding box
+		gl_FragDepth = 0.9999;
+		//discard;
 	} else {
 
 		// outColor = vec4(worldpos, 1.);
@@ -826,7 +826,7 @@ function animate() {
 	let near = 0.01, far = 30;
 	let angle = t*0.3;
 	let dist = 4;
-	vec3.lerp(lookat, lookat, cubes.instances[0].i_pos, 0.2)
+	vec3.lerp(lookat, lookat, cubes.instances[0].i_pos, 0.01)
 
 	let v = vec3.sub([0, 0, 0], camera_pos, lookat)
 	vec3.normalize(v, v)
