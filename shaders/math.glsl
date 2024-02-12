@@ -116,35 +116,34 @@ vec4 quat_slerp(vec4 qa, vec4 qb, float t) {
     return normalize( qa * ratioA + qb * ratioB );
 }
 
+vec4 quatFromAxisAngle(vec3 axis, float angle) {
+    axis = normalize(axis);
+    float c = cos(0.5 * angle);
+    float s = sqrt(1.0 - c * c);
+    return vec4(axis.x * s, axis.y * s, axis.z * s, c);
+}
+
 // get the rotation that will turn `q` 
 // so that its local `fwd` vector 
-// points in the same direction as `dir`
+// points in the same direction as `dir` (assumed normalized)
 vec4 quat_rotation_to(vec4 q, vec3 dir, vec3 fwd=vec3(0,0,-1)) {
-
-
-	vec4 res, axis;
-// 	// viewer's look direction in world space
-// 	vec3 v = quat_rotate(q, fwd);
-// 	// vec3.transformQuat(v, fwd, q); 
-// 	// // axis of rotation (not normalized)
-// 	// vec3.cross(axis, v, dir);
-// 	// let la = vec3.length(axis);
-// 	// let ld = vec3.length(dir); 
-// 	// // skips rotation if a) we are too close, 
-// 	// // or b) we are pointing in opposite directions
-// 	// if (ld > 0.000001 && la > 0.000001) {
-// 	// 	let sin_a = la / ld;
-// 	// 	let cos_a = vec3.dot(v, dir) / ld;
-// 	// 	let a = Math.atan2(sin_a, cos_a)
-// 	// 	// n becomes axis, but must first be normalized:
-// 	// 	vec3.scale(axis, axis, 1/la)
-// 	// 	quat.setAxisAngle(res, axis, a);
-// 	// } else {
-// 	// 	quat.identity(res);
-// 	// }
-// 	return res
-// }
-
+	vec4 res = quat_identity();
+    // viewer's look direction in world space
+    vec3 v = quat_rotate(q, fwd);
+    // axis of rotation (not normalized)
+    vec3 axis = cross(v, dir);
+    float la = length(axis);
+    float ld = length(dir);
+    // skips rotation if a) we are too close, 
+    // or b) we are pointing in opposite directions
+    if (ld > 0.000001 && la > 0.000001) {
+        float sin_a = la / ld;
+        float cos_a = dot(v, dir) / ld;
+        float a = atan(sin_a, cos_a);
+        // n becomes axis, but must first be normalized:
+        axis /= la;
+        res = quatFromAxisAngle(axis, a);
+    } 
 	return res;
 }
 
@@ -269,6 +268,16 @@ float within(in vec4 x, in vec4 _min, in vec4 _max) {
     vec4 rta = step(_min, x) * (1. - step(_max, x));
     return rta.x * rta.y * rta.z * rta.w;
 }
+
+// polynomial smooth min
+// from iq: https://iquilezles.org/articles/smin
+float smin( float a, float b, float k )
+{
+    float h = clamp( 0.5+0.5*(b-a)/k, 0.0, 1.0 );
+    return mix( b, a, h ) - k*h*(1.0-h);
+}
+
+float smax(float a,float b,float k){ return -smin(-a,-b,k);}
 
 float inverse(float m) { return 1.0 / m; }
 
@@ -416,6 +425,24 @@ mat4 mat4_fromMat3(mat3 m) {
                 vec4(0.0, 0.0, 0.0, 1.0) );
 }
 
+mat3 rotX(float a) {
+    return mat3(1., 0., 0.,
+                0., cos(a), sin(a),
+                0., -sin(a), cos(a));
+}
+
+mat3 rotY(float a) {
+    return mat3(cos(a), 0., sin(a),
+                0., 1., 0.,
+                -sin(a), 0., cos(a));
+}
+
+mat3 rotZ(float a) {
+    return mat3(cos(a), sin(a), 0.,
+                -sin(a), cos(a), 0.,
+                0., 0., 1.);
+}
+
 float hue2rgb(float f1, float f2, float hue) {
     if (hue < 0.0)
         hue += 1.0;
@@ -457,4 +484,70 @@ vec3 hsl2rgb(vec3 hsl) {
 
 vec3 hsl2rgb(float h, float s, float l) {
     return hsl2rgb(vec3(h, s, l));
+}
+
+// returns t0,t1, values of t in ro+t*rd
+// that is, the start and end point of the section of the ray that intersects with the sphere
+// if there is no intersection, t1 == 0 (aka t0 > t1)
+// this can be used to set up the initial t and tmax for a raymarch through a bounding sphere
+vec2 intersectSphere(vec3 ro, vec3 rd, vec3 org, float rad) {
+   float a = dot(rd, rd);
+   float b = 2.*dot(rd, ro - org);
+   float c = dot(ro - org, ro - org) - rad*rad;
+   float desc = b*b - 4.*a*c;
+   if (desc < 0.)
+      return vec2(1, 0);
+
+   return vec2((-b - sqrt(desc)) / (2.*a), (-b + sqrt(desc)) / (2.*a));
+}
+
+// distributes n points on the surface of a sphere using fibonnacci spiral distribution
+// Originally from https://www.shadertoy.com/view/lllXz4
+// Modified by fizzer to put out the vector q.
+// p is the direction vector to sample at (should be normalized)
+// n is the number of points (min 3)
+// return x is the nearest point id (0..n) to 'p'
+// return y is the distance from that point
+// outq is ?
+vec2 inverseSF( vec3 p, float n, out vec3 outq ) {
+    const float PI  = 3.14159265359;
+    const float PHI = 1.61803398875;
+
+    float m = 1.0 - 1.0/n;
+    
+    float phi = min(atan(p.y, p.x), PI), cosTheta = p.z;
+    
+    float k  = max(2.0, floor( log(n * PI * sqrt(5.0) * (1.0 - cosTheta*cosTheta))/ log(PHI+1.0)));
+    float Fk = pow(PHI, k)/sqrt(5.0);
+    vec2  F  = vec2( round(Fk), round(Fk * PHI) ); // k, k+1
+
+    vec2 ka = 2.0*F/n;
+    vec2 kb = 2.0*PI*( fract((F+1.0)*PHI) - (PHI-1.0) );    
+    
+    mat2 iB = mat2( ka.y, -ka.x, 
+                    kb.y, -kb.x ) / (ka.y*kb.x - ka.x*kb.y);
+    
+    vec2 c = floor( iB * vec2(phi, cosTheta - m));
+    float d = 8.0;
+    float j = 0.0;
+    for( int s=0; s<4; s++ ) 
+    {
+        vec2 uv = vec2( float(s-2*(s/2)), float(s/2) );
+        
+        float i = round(dot(F, uv + c));
+        
+        float phi = 2.0*PI*fract(i*PHI);
+        float cosTheta = m - 2.0*i/n;
+        float sinTheta = sqrt(1.0 - cosTheta*cosTheta);
+        
+        vec3 q = vec3( cos(phi)*sinTheta, sin(phi)*sinTheta, cosTheta );
+        float squaredDistance = dot(q-p, q-p);
+        if (squaredDistance < d) 
+        {
+            outq = q;
+            d = squaredDistance;
+            j = i;
+        }
+    }
+    return vec2( j, sqrt(d) );
 }

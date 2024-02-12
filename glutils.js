@@ -2331,6 +2331,13 @@ function quat_rotation_to(out, q, dir, fwd=[0,0,-1]) {
       p[3] * q[2] + p[2] * q[3] + p[0] * q[1] - p[1] * q[0] // z
     );
   }
+
+  function quat_fromAxisAngle(q, axis, angle) {
+    let ax = vec3.normalize([0, 0, 0], axis);
+    let c = Math.cos(0.5 * angle);
+    let s = Math.sqrt(1.0 - c*c); 
+    return quat.set(q, ax[0] * s, ax[1] * s, ax[2] * s, c);
+  }
     
   function createCheckerTexture(gl, texSize = 8) 
   {
@@ -2475,6 +2482,7 @@ module.exports = {
 	quat_rotate,
     quat_unrotate,
     quat_rotation_to,
+    quat_fromAxisAngle,
 
     
     frustumFromPerspective,
