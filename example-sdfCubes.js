@@ -624,7 +624,7 @@ void main() {
 
 	float glow = float(step)/float(STEPS);
 	//outColor += vec4(glow*glow); // show halo
-	outColor = mix(outColor, vec4(glow), glow*glow);
+	outColor = mix(outColor, vec4(glow), glow);
 	
 	// for deadzone:
 	if (contact == 0) {

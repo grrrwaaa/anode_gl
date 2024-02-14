@@ -61,8 +61,7 @@ bool iSphere(in vec3 ro, in vec3 rd, in vec4 sph, in float rad, out float t) {
 float scene(vec3 p) {
 
 
-	vec3 p1 = p;
-	pModPolar(p1.zx, float(2 + v_id));
+	vec3 p1 = p; pModPolar(p1.zx, float(2 + v_id));
 
 	float b0 = fSphere(p, 0.4);
 	float b1 = fBox(p, vec3(0.7));
