@@ -25,8 +25,8 @@ void main() {
 
     // clip space:
     // this is the near & far plane
-    vec4 nearpos = vec4(vertex.xy, -1, 1);
-    vec4 farpos = vec4(vertex.xy, 1, 1);
+    vec4 nearpos = vec4(gl_Position.xy, -1, 1);
+    vec4 farpos = vec4(gl_Position.xy, 1, 1);
 
     // to world space:
     nearpos = u_modelmatrix_inverse * u_viewmatrix_inverse * u_projmatrix_inverse * nearpos;
