@@ -25,7 +25,7 @@ void main() {
 	vec4 vertex = vec4(a_position * s, 1.);
 	vertex = quat_rotate(i_quat, vertex);
 	vertex.xyz += i_pos.xyz;
-	gl_Position = u_projmatrix * u_viewmatrix * u_modelmatrix * vertex;
+	gl_Position = u_projmatrix * u_viewmatrix * vertex;
 
-	v_normal = mat3(u_viewmatrix) * mat3(u_modelmatrix) * a_normal;
+	v_normal = mat3(u_viewmatrix) * a_normal;
 }

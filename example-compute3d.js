@@ -202,7 +202,7 @@ window.draw = function() {
 
 		if (0) {
 			shaderman.shaders.icubes.begin()
-			.uniform("u_modelmatrix", modelmatrix)
+			//.uniform("u_modelmatrix", modelmatrix)
 			.uniform("u_viewmatrix", viewmatrix)
 			.uniform("u_projmatrix", projmatrix)
 			cube.bind().drawInstanced(cubes.count)

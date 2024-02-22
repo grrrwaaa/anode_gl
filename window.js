@@ -94,7 +94,7 @@ class Window {
 	static syncfps = 0;
 	static all = new Set()
 
-	constructor(options) {
+	constructor(options={}) {
 		Object.assign(this, options)
 
 		glfw.defaultWindowHints();

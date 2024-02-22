@@ -58,6 +58,7 @@ vec4 quat_unrotate(in vec4 q, in vec4 v) {
 vec4 quat_identity() { return vec4(0, 0, 0, 1); }
 
 vec4 quat_conj(vec4 q) { return vec4(-q.xyz, q.w); }
+//vec4 quat_conj(vec4 q) { return q * vec4(-1, -1, -1, 1); }
 
 vec4 quat_mul(vec4 q1, vec4 q2) {
     return vec4(
@@ -81,6 +82,62 @@ vec4 quat_random(vec3 seed) {
 		sqrtU1 * sin(seed.z),
 		sqrtU1 * cos(seed.z)
 	);
+}
+
+// create a quat from a forward and up vector:
+vec4 quat(vec3 f, vec3 up) {
+    vec3 right = normalize(cross(f, -up));
+    up = normalize(cross(f, right));
+
+    float m00 = right.x;
+    float m01 = right.y;
+    float m02 = right.z;
+    float m10 = up.x;
+    float m11 = up.y;
+    float m12 = up.z;
+    float m20 = f.x;
+    float m21 = f.y;
+    float m22 = f.z;
+
+    float num8 = (m00 + m11) + m22;
+    vec4 q = vec4(0, 0, 0, 1);
+    if (num8 > 0.0) {
+        float num = sqrt(num8 + 1.0);
+        q.w = num * 0.5;
+        num = 0.5 / num;
+        q.x = (m12 - m21) * num;
+        q.y = (m20 - m02) * num;
+        q.z = (m01 - m10) * num;
+        return q;
+    }
+
+    if ((m00 >= m11) && (m00 >= m22)) {
+        float num7 = sqrt(((1.0 + m00) - m11) - m22);
+        float num4 = 0.5 / num7;
+        q.x = 0.5 * num7;
+        q.y = (m01 + m10) * num4;
+        q.z = (m02 + m20) * num4;
+        q.w = (m12 - m21) * num4;
+        return q;
+    }
+
+    if (m11 > m22) {
+        float num6 = sqrt(((1.0 + m11) - m00) - m22);
+        float num3 = 0.5 / num6;
+        q.x = (m10 + m01) * num3;
+        q.y = 0.5 * num6;
+        q.z = (m21 + m12) * num3;
+        q.w = (m20 - m02) * num3;
+        return q;
+    }
+
+    float num5 = sqrt(((1.0 + m22) - m00) - m11);
+    float num2 = 0.5 / num5;
+    q.x = (m20 + m02) * num2;
+    q.y = (m21 + m12) * num2;
+    q.z = 0.5 * num5;
+    q.w = (m01 - m10) * num2;
+    return q;
 }
 
 
@@ -162,6 +219,38 @@ mat3 quat2mat3(vec4 q) {
         vec3(2.0 * (qxy + qzw), 1.0 - 2.0 * (qxx + qzz), 2.0 * (qyz - qxw)),
         vec3(2.0 * (qxz - qyw), 2.0 * (qyz + qxw), 1.0 - 2.0 * (qxx + qyy))
     );
+}
+
+vec4 quatFromMat3(mat3 m) {
+    vec4 q = vec4(0, 0, 0, 1);
+    float tr = m[0].x + m[1].y + m[2].z;
+
+    if (tr > 0) { 
+        float S = sqrt(tr+1.0) * 2.0; // S=4*qw 
+        q.w = 0.25 * S;
+        q.x = (m[2].y - m[1].z) / S;
+        q.y = (m[0].z - m[2].x) / S; 
+        q.z = (m[1].x - m[0].y) / S; 
+    } else if ((m[0].x > m[1].y) && (m[0].x > m[2].z)) { 
+        float S = sqrt(1.0 + m[0].x - m[1].y - m[2].z) * 2.0; // S=4*qx 
+        q.w = (m[2].y - m[1].z) / S;
+        q.x = 0.25 * S;
+        q.y = (m[0].y + m[1].x) / S; 
+        q.z = (m[0].z + m[2].x) / S; 
+    } else if (m[1].y > m[2].z) { 
+        float S = sqrt(1.0 + m[1].y - m[0].x - m[2].z) * 2.0; // S=4*qy
+        q.w = (m[0].z - m[2].x) / S;
+        q.x = (m[0].y + m[1].x) / S; 
+        q.y = 0.25 * S;
+        q.z = (m[1].z + m[2].y) / S; 
+    } else { 
+        float S = sqrt(1.0 + m[2].z - m[0].x - m[1].y) * 2.0; // S=4*qz
+        q.w = (m[1].x - m[0].y) / S;
+        q.x = (m[0].z + m[2].x) / S;
+        q.y = (m[1].z + m[2].y) / S;
+        q.z = 0.25 * S;
+    }
+    return q;
 }
 
 
@@ -510,19 +599,19 @@ vec2 intersectSphere(vec3 ro, vec3 rd, vec3 org, float rad) {
 // return y is the distance from that point
 // outq is ?
 vec2 inverseSF( vec3 p, float n, out vec3 outq ) {
-    const float PI  = 3.14159265359;
-    const float PHI = 1.61803398875;
+    const float pi  = 3.14159265359;
+    const float c_phi = 1.61803398875;
 
     float m = 1.0 - 1.0/n;
     
-    float phi = min(atan(p.y, p.x), PI), cosTheta = p.z;
+    float phi = min(atan(p.y, p.x), pi), cosTheta = p.z;
     
-    float k  = max(2.0, floor( log(n * PI * sqrt(5.0) * (1.0 - cosTheta*cosTheta))/ log(PHI+1.0)));
-    float Fk = pow(PHI, k)/sqrt(5.0);
-    vec2  F  = vec2( round(Fk), round(Fk * PHI) ); // k, k+1
+    float k  = max(2.0, floor( log(n * pi * sqrt(5.0) * (1.0 - cosTheta*cosTheta))/ log(c_phi+1.0)));
+    float Fk = pow(c_phi, k)/sqrt(5.0);
+    vec2  F  = vec2( round(Fk), round(Fk * c_phi) ); // k, k+1
 
     vec2 ka = 2.0*F/n;
-    vec2 kb = 2.0*PI*( fract((F+1.0)*PHI) - (PHI-1.0) );    
+    vec2 kb = 2.0*pi*( fract((F+1.0)*c_phi) - (c_phi-1.0) );    
     
     mat2 iB = mat2( ka.y, -ka.x, 
                     kb.y, -kb.x ) / (ka.y*kb.x - ka.x*kb.y);
@@ -536,7 +625,7 @@ vec2 inverseSF( vec3 p, float n, out vec3 outq ) {
         
         float i = round(dot(F, uv + c));
         
-        float phi = 2.0*PI*fract(i*PHI);
+        float phi = 2.0*pi*fract(i*c_phi);
         float cosTheta = m - 2.0*i/n;
         float sinTheta = sqrt(1.0 - cosTheta*cosTheta);
         
