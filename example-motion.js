@@ -28,6 +28,8 @@ const gl = require('gles3.js'),
 	glutils = require('glutils.js'),
 	Shaderman = require('shaderman.js')
 
+const scriptname = __filename.slice(__dirname.length + 1, -3)
+
 let window = new Window({
 	CONTEXT_VERSION_MAJOR: 4, // need gl 4.3 for compute shaders
 	CONTEXT_VERSION_MINOR: 3,
@@ -92,7 +94,7 @@ window.draw = function() {
 
 			gbo_prev.bind()
 
-			shaderman.shaders.mocube.begin()
+			shaderman.shaders[scriptname].begin()
 			.uniform("u_modelmatrix", modelmatrix)
 			.uniform("u_viewmatrix", viewmatrix)
 			.uniform("u_projmatrix", projmatrix)

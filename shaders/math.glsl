@@ -514,6 +514,23 @@ mat4 mat4_fromMat3(mat3 m) {
                 vec4(0.0, 0.0, 0.0, 1.0) );
 }
 
+float farFromProjMatrix(mat4 m) {
+    return m[3].z / (m[2].z + 1.0);
+}
+
+float nearFromProjMatrix(mat4 m) {
+    return m[3].z / (m[2].z - 1.0);
+}
+
+// in radians
+float fovFromProjMatrix(mat4 m) {
+    return 2.0 * atan(1.0/m[1].y);
+}
+
+vec3 eyeFromViewMatrix(mat4 m) {
+    return -(m[3].xyz)*mat3(m);
+}
+
 mat3 rotX(float a) {
     return mat3(1., 0., 0.,
                 0., cos(a), sin(a),
