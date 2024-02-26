@@ -2441,6 +2441,31 @@ function viewThroughPlane(viewmatrix, A, B, C, near, far) {
 	return [projmatrix_plane, viewmatrix_plane]
 }
 
+// Euclidean modulo. assumes n > 0
+function wrap(a, n) { 
+	const r = a % n;
+	return r < 0 ? r + n : r; //a % n + (Math.sign(a) !== Math.sign(n) ? n : 0); 
+}
+
+// e.g. if n=4, it wraps in the range -4..4
+function wrap_relative(a, n) { 
+	return wrap(a + n, n*2) - n
+}
+
+function vec3_wrap(out, a, n) {
+	out[0] = wrap(a[0], n)
+	out[1] = wrap(a[1], n)
+	out[2] = wrap(a[2], n)
+	return out
+}
+
+function vec3_wrap_relative(out, a, n) {
+	out[0] = wrap_relative(a[0], n)
+	out[1] = wrap_relative(a[1], n)
+	out[2] = wrap_relative(a[2], n)
+	return out
+}
+
 module.exports = {
 	createShader,
 	createProgram,
@@ -2484,6 +2509,8 @@ module.exports = {
     quat_rotation_to,
     quat_fromAxisAngle,
 
+    wrap, wrap_relative, 
+    vec3_wrap, vec3_wrap_relative,
     
     frustumFromPerspective,
     perspectiveFromFrustum,
