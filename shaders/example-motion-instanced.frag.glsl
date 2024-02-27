@@ -13,6 +13,7 @@ uniform mat4 u_projmatrix_prev;
 uniform float t;
 
 in vec2 v_uv;
+in vec3 v_color;
 in vec3 v_normal;
 in vec3 v_warped;
 in vec3 v_position;
@@ -48,7 +49,6 @@ void main() {
 	// use v_warped.xy instead of retex.xy to see why sufficient tesselation is important
 	//vec4 color_prev = texture(u_color_prev, v_warped.xy);
 	// this is pretty close though:
-	vec4 color_prev = texture(u_color_prev, retex.xy);
 	vec4 depth_prev = texture(u_depth_prev, retex.xy);
 	//vec4 color_prev = texture(u_color_prev, retex.xy);
 
@@ -58,6 +58,10 @@ void main() {
 	// compare depths:
 	// hmm probably this should be something like a smoothstep on absdiff...
 	bool occluded = (depth_prev.x - depth) > 0.01;
+	//float occlude = 1.-smoothstep(0., 0.01, abs(depth - depth_prev.x));
+
+	// proportional:
+	float occlude = 1.-smoothstep(0, 0.05, abs((depth - depth_prev.x)/(depth + depth_prev.x)));
 
 	// we want the eye ray for this pixel to do normals properly.
 	// can't this be done in the vertex shader?
@@ -79,14 +83,24 @@ void main() {
 	grid.xy = floor(v_uv * 3.)/3.;
 	vec4 norm = vec4(v_normal*0.5 + 0.5, 1);
 	vec4 surface = mix(grid, norm, 0.5);
-	
-	surface.rgb = hash33(vec3(grid.xy, t * 0.003));
+	surface.rgb = hash33(v_position.xyz);
+	//surface.rgb = hash33(vec3(grid.xy, t * 0.003));
+	//surface.rgb *= vec3(oblique);
+	surface.rgb *= v_color;
+	surface.rgb *= occlude;
 
+	float blur = 0.;
+	//blur = 8.*pow(1.-oblique, 4.);
+	//blur = 8.*(1.-occlude);
+	vec4 color_prev = texture(u_color_prev, retex.xy, blur);
 
 	// choose between them:
-	out_color = mix(surface, color_prev, (occluded || offscreen) ? 0. : pow(oblique, 0.01));
+	out_color = mix(surface, color_prev, (offscreen) ? 0. : pow(oblique, 0.01) * occlude);
 
+	//out_color = vec4((1.-occlude));
+	//out_color = vec4(pow(1.-oblique, 4.));
 
+	//out_color = vec4(smoothstep(0, 0.1, occlude));
 	//out_color = vec4(ray, 1.);	
 	//out_color = vec4(n0, 1.);
 	//out_color = vec4(hidden);

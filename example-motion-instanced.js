@@ -46,10 +46,10 @@ let window = new Window({
 })
 const shaderman = new Shaderman(gl)
 const quad_vao = glutils.createVao(gl, glutils.makeQuad())
-const FAR = 16
+const FAR = 32
 
 const cube_vao = glutils.createVao(gl, glutils.makeCube({
-	div: 32
+	div: 4
 }))
 
 // always use vec4 
@@ -61,7 +61,7 @@ let cubes = glutils.createInstances(gl, [
 	// previous position & orientation:
 	{ location: 6, name:"i_pos0", components:4 },
 	{ location: 7, name:"i_quat0", components:4 },
-], 10)
+], 64)
 // the .instances provides a convenient interface to the underlying arraybuffer
 cubes.instances.forEach((obj, i)=> {
 	// each field is exposed as a corresponding typedarray view
@@ -85,7 +85,7 @@ cubes.bind().submit().unbind();
 cubes.attachTo(cube_vao);
 
 // Either way it gets blurry, mipmaps might not be necessary
-let mipmap_color = false
+let mipmap_color = true
 
 // we'll want a MRT fbo to gather data:
 let gbo = glutils.makeGbuffer(gl, window.width, window.height, [
@@ -114,7 +114,7 @@ window.draw = function() {
 
 	let center = cubes.instances[0].i_pos
 	let q = [0.5, 0.1, 0, 0]
-	quat.fromEuler(q, 0, 0, 1)
+	quat.fromEuler(q, 0, 0, 0.4)
 	quat.normalize(q, q)
 	for (let [i, obj] of Object.entries(cubes.instances)) {
 
@@ -123,7 +123,7 @@ window.draw = function() {
 		quat.copy(obj.i_quat0, obj.i_quat)
 
 		// move according to heading:
-		let spd = 2
+		let spd = 20*i/cubes.count
 		let v = [spd * dt, 0, 0]
 		quat_rotate(v, obj.i_quat, v);
 		vec3.add(obj.i_pos, obj.i_pos, v)

@@ -1318,13 +1318,14 @@ function createVao(gl, geom, program) {
             this.unbind();
         },
 
-        // assumes vao and buffer are already bound:
+        // assumes vao is already bound:
         setAttributes(buffer, bytestride, bufferFields, instanced) {
             gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
             for (let field of bufferFields) {
                 const attrLoc = field.location != undefined ? field.location : gl.getAttribLocation(this.program, field.name);
                 const normalize = false;
                 const bytesize = field.bytesize / field.components;
+
                 // watch out: if field.componnents > 4, it occupies several attribute slots
                 // need to enable and bind each of them in turn:
                 for (let i=0; i<field.components; i+=4) {
@@ -1338,6 +1339,7 @@ function createVao(gl, geom, program) {
                     } else {
                         gl.vertexAttribDivisor(loc, 0);
                     }
+
                     //console.log("set attr", field.name, loc, components, instanced, bytestride, byteoffset)
                 }
             }
@@ -1355,6 +1357,7 @@ function createVao(gl, geom, program) {
 		// bind first:
 		submit() {
             //gl.bufferData(gl.ARRAY_BUFFER, this.data, gl.DYNAMIC_DRAW);
+            if (!geom) return
             if (geom.vertices) {
                 gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
                 gl.bufferData(gl.ARRAY_BUFFER, geom.vertices, gl.DYNAMIC_DRAW);
@@ -1377,18 +1380,24 @@ function createVao(gl, geom, program) {
             }
 			return this;
 		},
+
+        attach(buffer, instanced=false) {
+            this.bind().setAttributes(buffer.id, buffer.bytestride, buffer.fields, instanced).unbind();
+            return this
+        },
+
         draw(count=0, offset=0) {
-			if (geom.indices) gl.drawElements(gl.TRIANGLES, count ? count : geom.indices.length, this.indexType, offset);
+			if (geom && geom.indices) gl.drawElements(gl.TRIANGLES, count ? count : geom.indices.length, this.indexType, offset);
 			else gl.drawArrays(gl.TRIANGLES, offset, count ? count : geom.vertices.length/geom.vertexComponents);
 			return this;
         },
         drawLines(count=0, offset=0) {
-			if (geom.indices) gl.drawElements(gl.LINES, count ? count : geom.indices.length, this.indexType, offset);
+			if (geom && geom.indices) gl.drawElements(gl.LINES, count ? count : geom.indices.length, this.indexType, offset);
 			else gl.drawArrays(gl.LINES, offset, count ? count : geom.vertices.length/geom.vertexComponents);
 			return this;
         },
         drawPoints(count=0, offset=0) {
-            if (geom.indices) gl.drawElements(gl.POINTS, count ? count : geom.indices.length, this.indexType, offset);
+            if (geom && geom.indices) gl.drawElements(gl.POINTS, count ? count : geom.indices.length, this.indexType, offset);
 			else gl.drawArrays(gl.POINTS, offset, count ? count : geom.vertices.length/geom.vertexComponents);
 			return this;
         },
@@ -1579,8 +1588,8 @@ function createInstances(gl, fields, count=0) {
 			return this;
 		},
 
-		attachTo(vao) {
-			vao.bind().setAttributes(this.id, this.bytestride, this.fields, true).unbind();
+		attachTo(vao, instanced=true) {
+			vao.bind().setAttributes(this.id, this.bytestride, this.fields, instanced).unbind();
 			return this;
 		},
 
@@ -2467,6 +2476,9 @@ function vec3_wrap_relative(out, a, n) {
 }
 
 module.exports = {
+
+    byteSizeForGLType,
+
 	createShader,
 	createProgram,
     createComputeProgram,

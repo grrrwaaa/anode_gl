@@ -16,6 +16,7 @@ layout(location = 6) in vec4 i_pos0;
 layout(location = 7) in vec4 i_quat0;
 
 out vec2 v_uv;
+out vec3 v_color;
 out vec3 v_normal;
 out vec3 v_warped;
 out vec3 v_flow;
@@ -27,6 +28,10 @@ out vec4 v_clipspace0;
 out vec4 v_clipspace1;
 
 void main() {
+
+	float hue = float(gl_InstanceID % 16)/16.;
+	v_color = hsl2rgb(hue, 0.7, 0.7);
+
 	// Multiply the position by the matrix.
 	vec4 vertex = vec4(a_position.xyz, 1);
 
