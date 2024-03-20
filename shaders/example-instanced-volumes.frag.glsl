@@ -253,7 +253,7 @@ void main() {
 		out_color *= vec4(pow(abs(dot(rd, n)), 0.95));
 
     } else {
-        discard;
+        //discard;
         out_color = vec4(0.2);
     }
 

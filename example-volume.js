@@ -35,7 +35,10 @@ let window = new Window({
 const shaderman = new Shaderman(gl)
 const quad_vao = glutils.createVao(gl, glutils.makeQuad())
 
-let cube_vao = glutils.createVao(gl, glutils.makeCube())
+let cube_size = 1.5
+let cube_vao = glutils.createVao(gl, glutils.makeCube({
+	min: -cube_size, max: cube_size
+}))
 
 let N = 32
 let vol = glutils.createTexture3D(gl, { 
@@ -68,13 +71,18 @@ window.draw = function() {
     let ctr = [0, 0, 0]
 
 	let a = t*0.1
-    let r = 3 * Math.sin(a * 4.)
+    let r = 4 * Math.sin(a * 4.)
 	let eye = [ r * Math.sin(a)  +ctr[0], r * Math.sin(a*1.3)  +ctr[1], r * Math.cos(a*1.5)  +ctr[2]]
 	let at = [ Math.cos(a*1.2)*0.2+ctr[0], Math.sin(a*1.1)*0.1 +ctr[1], Math.sin(a*1.4)*0.2 +ctr[2] ]
 
 	
 	mat4.lookAt(viewmatrix, eye, at, [0, 1, 0]);
 	mat4.perspective(projmatrix, Math.PI*0.6, aspect, near, far);
+
+	mat4.rotateY(modelmatrix, modelmatrix, t);
+	mat4.translate(modelmatrix, modelmatrix, [0, Math.cos(t), 0]);
+	let s = Math.sin(t)+1.1
+	mat4.scale(modelmatrix, modelmatrix, [s, s, s])
 	
 	mat4.invert(modelmatrix_inverse, modelmatrix)
 	mat4.invert(viewmatrix_inverse, viewmatrix)
@@ -88,12 +96,13 @@ window.draw = function() {
 	gl.enable(gl.DEPTH_TEST)
 
 
-    
-    shaderman.shaders.geom.begin()
-    .uniform("u_modelmatrix", modelmatrix)
-    .uniform("u_viewmatrix", viewmatrix)
-    .uniform("u_projmatrix", projmatrix)
-    cube_vao.bind().draw()
+    if ((t % 1) < 0.5) {
+		shaderman.shaders.geom.begin()
+		.uniform("u_modelmatrix", modelmatrix)
+		.uniform("u_viewmatrix", viewmatrix)
+		.uniform("u_projmatrix", projmatrix)
+		cube_vao.bind().draw()
+	}
 
     shaderman.shaders.volume.begin()
     .uniform("u_modelmatrix", modelmatrix)
@@ -102,6 +111,7 @@ window.draw = function() {
     .uniform("u_modelmatrix_inverse", modelmatrix_inverse)
     .uniform("u_viewmatrix_inverse", viewmatrix_inverse)
     .uniform("u_projmatrix_inverse", projmatrix_inverse)
+	.uniform("u_cube_size", cube_size)
     quad_vao.bind().draw()
 
         
