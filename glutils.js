@@ -737,7 +737,59 @@ function createTexture3D(gl, opt={}) {
             let z = Math.floor(pos[2]);
             let idx = ((this.height*z + y)*this.width + x) * this.channels; // TODO: assumes single-channel
             return this.data[idx];
-        }
+        },
+
+        read_wrap(pos) {
+            let x = wrap(Math.floor(pos[0]), this.width);
+            let y = wrap(Math.floor(pos[1]), this.height);
+            let z = wrap(Math.floor(pos[2]), this.depth);
+            let idx = ((this.height*z + y)*this.width + x) * this.channels; 
+            return this.data.subarray(idx, idx+this.channels);
+        },
+
+        readInto_wrap_interp(pos, val) {
+            let [ x, y, z ] = pos;
+            let xi = Math.floor(x);
+            let yi = Math.floor(y);
+            let zi = Math.floor(z);
+            let xa0 = x - xi, ya0 = y - yi, za0 = z - zi;
+            let xa1 = 1-xa0, ya1 = 1-ya0, za1 = 1-za0
+            let xi0 = wrap(Math.floor(pos[0]), this.width);
+            let yi0 = wrap(Math.floor(pos[1]), this.height);
+            let zi0 = wrap(Math.floor(pos[2]), this.depth);
+            let xi1 = wrap(xi0+1, this.width);
+            let yi1 = wrap(yi0+1, this.height);
+            let zi1 = wrap(zi0+1, this.depth);
+            let idx000 = ((this.height*zi0 + yi0)*this.width + xi0) * this.channels; 
+            let idx001 = ((this.height*zi0 + yi0)*this.width + xi1) * this.channels; 
+            let idx010 = ((this.height*zi0 + yi1)*this.width + xi0) * this.channels; 
+            let idx011 = ((this.height*zi0 + yi1)*this.width + xi1) * this.channels; 
+            let idx100 = ((this.height*zi1 + yi0)*this.width + xi0) * this.channels; 
+            let idx101 = ((this.height*zi1 + yi0)*this.width + xi1) * this.channels; 
+            let idx110 = ((this.height*zi1 + yi1)*this.width + xi0) * this.channels; 
+            let idx111 = ((this.height*zi1 + yi1)*this.width + xi1) * this.channels; 
+            let data000 = this.data.subarray(idx000, idx000+this.channels);
+            let data001 = this.data.subarray(idx001, idx001+this.channels);
+            let data010 = this.data.subarray(idx010, idx010+this.channels);
+            let data011 = this.data.subarray(idx011, idx011+this.channels);
+            let data100 = this.data.subarray(idx100, idx100+this.channels);
+            let data101 = this.data.subarray(idx101, idx101+this.channels);
+            let data110 = this.data.subarray(idx110, idx110+this.channels);
+            let data111 = this.data.subarray(idx111, idx111+this.channels);
+
+            let result = []
+            for (let i=0; i<this.channels; i++) {
+                result[i] = data000[i]*za0*ya0*xa0 + 
+                            data001[i]*za0*ya0*xa1 + 
+                            data010[i]*za0*ya1*xa0 + 
+                            data011[i]*za0*ya1*xa1 + 
+                            data100[i]*za1*ya0*xa0 + 
+                            data101[i]*za1*ya0*xa1 + 
+                            data110[i]*za1*ya1*xa0 + 
+                            data111[i]*za1*ya1*xa1;
+            }
+            return result
+        },
 	};
 
     tex.allocate().bind().submit()
