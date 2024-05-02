@@ -747,7 +747,7 @@ function createTexture3D(gl, opt={}) {
             return this.data.subarray(idx, idx+this.channels);
         },
 
-        readInto_wrap_interp(pos, val) {
+        readInto_wrap_interp(pos, result=[]) {
             let [ x, y, z ] = pos;
             let xi = Math.floor(x);
             let yi = Math.floor(y);
@@ -777,7 +777,6 @@ function createTexture3D(gl, opt={}) {
             let data110 = this.data.subarray(idx110, idx110+this.channels);
             let data111 = this.data.subarray(idx111, idx111+this.channels);
 
-            let result = []
             for (let i=0; i<this.channels; i++) {
                 result[i] = data000[i]*za0*ya0*xa0 + 
                             data001[i]*za0*ya0*xa1 + 
