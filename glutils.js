@@ -996,6 +996,10 @@ function makeGbuffer(gl, width=1024, height=1024, config=[
 		width: width,
         height: height,
         data: [],
+
+        clone(gl) {
+            return makeGbuffer(gl, this.width, this.height, this.config)
+        },
         
         // be sure to set viewport & clear after begin()
         begin() {
