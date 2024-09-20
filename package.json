@@ -12,14 +12,10 @@
     "png-js": "^1.0.0",
     "pngjs": "^7.0.0"
   },
-  "devDependencies": {
-    "native-graphics-deps": "0.0.22"
-  },
+  "devDependencies": {},
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "preinstall": "node test.js",
-    "install": "node-gyp rebuild",
-    "generate": "node src/gen.js && node-gyp rebuild"
+    "install": "node src/gen.js && node-gyp rebuild"
   },
   "gypfile": true,
   "repository": {
