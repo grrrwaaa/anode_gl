@@ -18,6 +18,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "preinstall": "node test.js",
+    "install": "node-gyp rebuild",
     "generate": "node src/gen.js && node-gyp rebuild"
   },
   "gypfile": true,
