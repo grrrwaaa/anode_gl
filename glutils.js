@@ -1998,6 +1998,7 @@ function makeQuad(options) {
     if (typeof div == "number") div = [div, div];
     let span = [max[0]-min[0], max[1]-min[1]];
     let step = [1/div[0], 1/div[1]];
+    let flipY = opt.flipY
     let vertices = [];
     let normals = [];
     let texCoords = [];
@@ -2020,10 +2021,10 @@ function makeQuad(options) {
                 vax, vby
             );
             texCoords.push(
-                ax, ay,
-                bx, ay,
-                bx, by,
-                ax, by
+                ax, flipY ? 1-ay : ay,
+                bx, flipY ? 1-ay : ay,
+                bx, flipY ? 1-by : by,
+                ax, flipY ? 1-by : by
             );
             normals.push(
                 0, 0, 1,
