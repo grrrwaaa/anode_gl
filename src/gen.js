@@ -1,6 +1,8 @@
 const fs = require("fs"), 
 	path = require("path");
 
+let DEVELOPMENT = 0
+
 let blacklist = {
 	// blacklisted because they are not in the libglfw3.dll that is shipped in native-graphics-deps
 	glfwInitHint:true,
@@ -207,7 +209,7 @@ function generate_handler(name, s_name, ret, arg, out_blocks) {
 
 			} break;
 			default: {
-				console.log("unhandled", argtype, argname, `	${ret} ${name}(${args.join(", ")})`);
+				if (DEVELOPMENT) console.log("unhandled", argtype, argname, `	${ret} ${name}(${args.join(", ")})`);
 				out_lines.push(`${argtype} ${argname};`);
 				continue;
 			} break;
