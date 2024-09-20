@@ -17,7 +17,7 @@
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "prepare": "node src/test.js",
+    "preinstall": "node src/test.js",
     "generate": "node src/gen.js && node-gyp rebuild"
   },
   "gypfile": true,
