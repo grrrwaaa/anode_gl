@@ -1,11 +1,6 @@
 const { vec2, vec3, vec4, quat, mat2, mat2d, mat3, mat4} = require("gl-matrix")
 
-module.paths.push(__dirname)
-const gl = require('gles3.js'),
-	glfw = require('glfw3.js'),
-    Window = require("window.js"),
-	glutils = require('glutils.js'),
-	Shaderman = require('shaderman.js')
+const { gl, glfw, glutils, Window, Shaderman } = require('./index.js')
     
 /*
 

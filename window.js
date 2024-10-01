@@ -181,6 +181,7 @@ class Window {
 		this.mode = glfw.getVideoMode(this.monitor)
 		if (bool) {
 			// go fullscreen
+			console.log("going to fullscreen at", this.mode.width, this.mode.height)
 			glfw.setWindowAttrib(this.window, glfw.DECORATED, 0)
 			// enable this if you want the window to always be on top (no alt-tabbing)
 			glfw.setWindowAttrib(this.window, glfw.FLOATING , 1);

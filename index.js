@@ -8,4 +8,5 @@ module.exports = {
     Window: require("./window.js"),
 	Shaderman: require('./shaderman.js'),
     Prng: require("./prng.js"),
+    Config: require("./config.js"),
 }
