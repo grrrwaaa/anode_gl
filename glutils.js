@@ -2155,6 +2155,14 @@ function makeLine(options) {
 	}
 }
 
+function geomToOBJ(geom) {
+    /*
+        geom could have 2 or 3 vertexComponents
+        must have .vertices, might have normals, texCoords, probably has indices
+
+    */
+}
+
 function geomFromOBJ(objcode, options) {
     // create a normal per face
     options = options || {}
@@ -2262,6 +2270,44 @@ function geomFromOBJ(objcode, options) {
 	return geom
 }
 
+function geomToOBJ(geom) {
+    /*
+        geom could have 2 or 3 vertexComponents
+        must have .vertices, might have normals, texCoords, probably has indices
+
+    */
+    let { vertexComponents, vertices, normals, texCoords, indices } = geom
+    console.log(geom)
+    let lines = []
+    let numverts = vertices.length / vertexComponents
+    // for each vertex... 
+    for (let i=0; i<vertices.length; i+= vertexComponents) {
+        let vs = Array.from(vertices.slice(i, i+vertexComponents))
+        .map(s => Number(s))
+        lines.push(`v ${vs.join(" ")}`)
+    }
+
+    for (let i=0; i<texCoords.length; i+= 2) {
+        let vs = Array.from(texCoords.slice(i, i+2))
+        .map(s => Number(s))
+        lines.push(`vt ${vs.join(" ")}`)
+    }
+
+    for (let i=0; i<normals.length; i+= 3) {
+        let vs = Array.from(normals.slice(i, i+3))
+        .map(s => Number(s))
+        lines.push(`vn ${vs.join(" ")}`)
+    }
+
+    for (let i=0; i<indices.length; i+=3) {
+        let is = Array.from(indices.slice(i, i+3))
+        .map(s => Number(s) + 1)
+        .map(n => `${n}/${n}/${n}`)
+        lines.push(`f ${is.join(" ")}`)
+    }
+
+    return lines.join("\n")
+}
 
 // m4 should be a mat4
 // geom should have vertexComponents 3+
@@ -2568,6 +2614,7 @@ module.exports = {
     makeOpenCylinder,
 
     geomFromOBJ,
+    geomToOBJ,
     geomAppend,
     geomTransform,
     geomTexTransform,
