@@ -16,28 +16,26 @@ class App {
         // have to do it with `bind` to ensure `this` refers to the app. 
         window.draw = this.draw.bind(this)
         
+        // i.e. are we the first window to be created? If so, create global resources:
         if (!fbo) {
-            shaderman = new Shaderman(gl)
-
-            // create one that will be shared:
             fbo = glutils.makeGbuffer(gl, 640, 480, [
                 { float: false, mipmap: false, wrap: gl.CLAMP_TO_EDGE }, 
             ])
-            
-            
+
+            shaderman = new Shaderman(gl)
         }
 
-        // VAOs can't be shared:
+        // VAOs can't be shared between windows, so we have to create one per window:
         let quad_vao = glutils.createVao(gl, glutils.makeQuad3D())
 
         Object.assign(options, { 
-            window, shaderman, quad_vao
+            window, quad_vao
         })
         Object.assign(this, options)
     }
 
     draw(gl) {
-        let { window, shaderman, quad_vao } = this
+        let { window } = this
         let { t, dt, width, height } = window
 
         if (this.title == "window0") {
@@ -65,7 +63,7 @@ class App {
                 .uniform("u_modelmatrix", modelmatrix)
                 .uniform("u_viewmatrix", viewmatrix)
                 .uniform("u_projmatrix", projmatrix)
-                quad_vao.bind().draw()
+                this.quad_vao.bind().draw()
             }
             fbo.end()
         }
@@ -77,11 +75,11 @@ class App {
 
         fbo.bind()
         shaderman.shaders.show.begin()
-        quad_vao.bind().draw()
+        this.quad_vao.bind().draw()
 
         
         if (Math.floor(t+dt) > Math.floor(t)) {
-            console.log(`realfps ${1/dt}`)
+            console.log(`fps ${1/dt}`)
         }
     }
 }
