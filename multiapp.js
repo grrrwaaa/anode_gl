@@ -6,15 +6,12 @@ const { vec2, vec3, vec4, quat, mat2, mat2d, mat3, mat4} = require("gl-matrix")
 let fbo
 let shaderman
 
-class App {
-
-    window = null;
+class App extends Window {
 
     constructor(options) {
-        let window = new Window(options)
-
-        // have to do it with `bind` to ensure `this` refers to the app. 
-        window.draw = this.draw.bind(this)
+        super(options)
+        // have to manually install this:
+        this.draw = App.prototype.draw
         
         // i.e. are we the first window to be created? If so, create global resources:
         if (!fbo) {
@@ -26,17 +23,15 @@ class App {
         }
 
         // VAOs can't be shared between windows, so we have to create one per window:
-        let quad_vao = glutils.createVao(gl, glutils.makeQuad3D())
-
-        Object.assign(options, { 
-            window, quad_vao
+        Object.assign(this, { 
+            quad_vao: glutils.createVao(gl, glutils.makeQuad3D()),
+            cube_vao: glutils.createVao(gl, glutils.makeCube()),
         })
-        Object.assign(this, options)
     }
 
     draw(gl) {
-        let { window } = this
-        let { t, dt, width, height } = window
+        //let { window } = this
+        let { t, dt, width, height } = this
 
         if (this.title == "window0") {
             fbo.begin()
@@ -63,7 +58,7 @@ class App {
                 .uniform("u_modelmatrix", modelmatrix)
                 .uniform("u_viewmatrix", viewmatrix)
                 .uniform("u_projmatrix", projmatrix)
-                this.quad_vao.bind().draw()
+                this.cube_vao.bind().draw()
             }
             fbo.end()
         }
