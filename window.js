@@ -44,8 +44,8 @@
 
 const gl = require('./gles3.js') 
 const glutils = require('./glutils.js')
-const { ok } = glutils;
 const glfw = require('./glfw3.js')
+const { ok } = glutils;
 
 // once only
 if (!glfw.init()) {
