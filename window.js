@@ -97,6 +97,8 @@ class Window {
 	constructor(options={}) {
 		Object.assign(this, options)
 
+		this.title = this.title || `anode${Window.all.size}`
+
 		glfw.defaultWindowHints();
 		glfw.windowHint(glfw.CONTEXT_VERSION_MAJOR, options.CONTEXT_VERSION_MAJOR || 3);
 		glfw.windowHint(glfw.CONTEXT_VERSION_MINOR, options.CONTEXT_VERSION_MINOR || 3);

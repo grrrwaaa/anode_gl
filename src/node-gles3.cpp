@@ -13175,6 +13175,7 @@ napi_value init(napi_env env, napi_value exports) {
 		{ "getInteger64i_v", 0, GetInteger64i_v, 0, 0, 0, napi_default, 0 },
 		{ "getBufferParameteri64v", 0, GetBufferParameteri64v, 0, 0, 0, napi_default, 0 },
 		{ "getTexImage", 0, GetTexImage, 0, 0, 0, napi_default, 0 },
+		{ "getTextureSubImage", 0, GetTextureSubImage, 0, 0, 0, napi_default, 0 },
 		{ "getProgramInfoLog", 0, GetProgramInfoLog, 0, 0, 0, napi_default, 0 },
 		{ "getProgramParameter", 0, GetProgramParameter, 0, 0, 0, napi_default, 0 },
 		{ "getShaderInfoLog", 0, GetShaderInfoLog, 0, 0, 0, napi_default, 0 },
@@ -14235,7 +14236,7 @@ napi_value init(napi_env env, napi_value exports) {
 		{ "replacementCodeusvSUN", 0, ReplacementCodeusvSUN, 0, 0, 0, napi_default, 0 },
 		{ "addSwapHintRectWIN", 0, AddSwapHintRectWIN, 0, 0, 0, napi_default, 0 }
 	};
-	status = napi_define_properties(env, exports, 1083, properties);
+	status = napi_define_properties(env, exports, 1084, properties);
 	//assert(status == napi_ok);
 	return exports;
 }

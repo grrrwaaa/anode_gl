@@ -55,13 +55,13 @@ napi_value GetErrorString(napi_env env, napi_callback_info info) {
 	if (err) {
 		const char * description = (const char *) glewGetErrorString(err);
 		const char * name = (const char *) glewGetString(err);
-		if (description) printf("description %s %d\n", description, strlen(description));
-		if (name) printf("name %s %d\n", name, strlen(name));
-		// if (description) {
-		// 	napi_create_string_utf8(env, description, strlen(description), &result_value);
-		// } else {	
-		// 	napi_create_string_utf8(env, name, strlen(name), &result_value);
-		// }
+		// if (description) printf("description %s %d\n", description, strlen(description));
+		// if (name) printf("name %s %d\n", name, strlen(name));
+		if (name) {
+			napi_create_string_utf8(env, name, strlen(name), &result_value);
+		} else {	
+			napi_create_string_utf8(env, description, strlen(description), &result_value);
+		}
 	}
 	return result_value;
 }
@@ -363,9 +363,39 @@ napi_value GetTexImage(napi_env env, napi_callback_info info) {
 	status = getTypedArray(env, args[4], *(void **)&data);
 	if (status != napi_ok) return nullptr;
 	// void glGetTexImage(	GLenum target, GLint level, GLenum format, GLenum type, void * pixels);
-	glGetTexImage(target, level, format, type, data);
+	//glGetTexImage(target, level, format, type, data);
 	return args[4];
 }
+
+// https://registry.khronos.org/OpenGL-Refpages/gl4/html/glGetTextureSubImage.xhtml
+napi_value GetTextureSubImage(napi_env env, napi_callback_info info) {
+	napi_status status = napi_ok;
+	napi_value args[12];
+	size_t argc = checkArgCount(env, info, args, 12, 12);
+
+	GLenum texture = getUint32(env, args[0]);
+	GLint level = getInt32(env, args[1]);
+
+	GLint xoffset = getInt32(env, args[2]);
+	GLint yoffset = getInt32(env, args[3]);
+	GLint zoffset = getInt32(env, args[4]);
+
+	GLsizei width = getUint32(env, args[5]);
+	GLsizei height = getUint32(env, args[6]);
+	GLsizei depth = getUint32(env, args[7]);
+
+	GLenum format = getUint32(env, args[8]);
+	GLenum type = getUint32(env, args[9]);
+	
+	GLsizei bufsize = getUint32(env, args[10]);
+	void * data = nullptr;
+	status = getTypedArray(env, args[11], *(void **)&data);
+	if (status != napi_ok) return nullptr;
+	glGetTextureSubImage(texture, level, xoffset, yoffset, zoffset, width, height, depth, format, type, bufsize, data);
+	return args[11];
+	//return nullptr;
+}
+//glGetTextureSubImage
 
 napi_value GetProgramInfoLog(napi_env env, napi_callback_info info) {
 	napi_status status = napi_ok;

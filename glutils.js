@@ -6,7 +6,7 @@ const { vec2, vec3, vec4, quat, mat2, mat2d, mat3, mat4} = require("gl-matrix")
 
 function ok(gl, msg="gl not ok: ") {
 	let err = gl.getError();
-    if (err) console.log(msg+" "+err+" "+gl.getErrorString(err))
+    if (err) console.error(msg+" "+err+" "+gl.getErrorString(err))
 	//assert(!err, msg+" "+err+" "+gl.getErrorString(err));
 }
 
@@ -1070,6 +1070,58 @@ function makeGbuffer(gl, width=1024, height=1024, config=[
             return this;
         },
 	}
+}
+
+function makeGbufferPair(gl, width=1024, height=1024, config=[
+	{ float:false, mipmap: false, wrap: gl.CLAMP_TO_EDGE },
+]) {
+    let readbuffer = makeGbuffer(...arguments)
+    let writebuffer = readbuffer.clone(gl)
+    return {
+        readbuffer, writebuffer,
+
+		width, height, config,
+
+        swap() {
+            let tmp = this.readbuffer;
+            this.readbuffer = this.writebuffer;
+            this.writebuffer = tmp;
+            return this
+        },
+
+        begin() {
+            this.writebuffer.begin()
+            return this
+        },
+        readPixels() {
+            this.writebuffer.readPixels(...arguments)
+            return this
+        },
+        end() {
+            this.writebuffer.end()
+            this.swap()
+            return this
+        },
+
+        bind() {
+            this.readbuffer.bind(...arguments)
+            return this
+        },
+        unbind() {
+            this.readbuffer.unbind(...arguments)
+            return this
+        },
+        // must bind first
+        submit() {
+            this.readbuffer.submit(...arguments)
+            return this
+        },
+
+        dispose() {
+            this.front.dispose()
+            this.back.dispose()
+        }
+    }
 }
 
 function createFBO(gl, width=1024, height=1024, floatingpoint=false) {
@@ -2604,6 +2656,8 @@ module.exports = {
 
     makeFboWithDepth,
     makeGbuffer,
+    makeGbufferPair,
+
 	createFBO,
 	createSlab,
 
