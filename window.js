@@ -65,6 +65,7 @@ class Window {
 	monitor = 0;
 	title = "";
 	fullscreen = false;
+	decorated = true;
 
 	pos = [40, 40];
 
@@ -114,7 +115,7 @@ class Window {
 		if (this.fullscreen) {
 			glfw.windowHint(glfw.DECORATED, 0);
 		} else {
-			glfw.windowHint(glfw.DECORATED, 1);
+			glfw.windowHint(glfw.DECORATED, this.decorated);
 		}
 
 		// for context sharing:
@@ -194,7 +195,7 @@ class Window {
 
 		} else {
 			// exit fullscreen
-			glfw.setWindowAttrib(this.window, glfw.DECORATED, 1)
+			glfw.setWindowAttrib(this.window, glfw.DECORATED, this.decorated)
 			// enable this if you want the window to always be on top (no alt-tabbing)
 			glfw.setWindowAttrib(this.window, glfw.FLOATING , 0);
 			glfw.setWindowSize(this.window, this.width || this.mode.width/2, this.height || this.mode.height/2)
