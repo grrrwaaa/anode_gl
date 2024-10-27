@@ -175,7 +175,7 @@ class Window {
 	}
 
 	toggleFullscreen() {
-		this.setFullscreen(glfw.getWindowAttrib(this.window, glfw.DECORATED))
+		this.setFullscreen(!this.fullscreen)
 	}
 
 	setFullscreen(bool) {
