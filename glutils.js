@@ -2207,14 +2207,6 @@ function makeLine(options) {
 	}
 }
 
-function geomToOBJ(geom) {
-    /*
-        geom could have 2 or 3 vertexComponents
-        must have .vertices, might have normals, texCoords, probably has indices
-
-    */
-}
-
 function geomFromOBJ(objcode, options) {
     // create a normal per face
     options = options || {}
@@ -2229,6 +2221,8 @@ function geomFromOBJ(objcode, options) {
     let gnormals = []
 	let texCoords = []
 	let gtexCoords = []
+    let colors = []
+    let gcolors = []
 	let memo = {}
 	let gindices = []
 	let indexcount=0;
@@ -2240,8 +2234,9 @@ function geomFromOBJ(objcode, options) {
             let match = line.match(/vt\s+([0-9.e-]+)\s+([0-9.e-]+)/)
             texCoords.push([+match[1], +match[2]])
 		} else if (line.substring(0,1) == "v") {
-            let match = line.match(/v\s+([0-9.e-]+)\s+([0-9.e-]+)\s+([0-9.e-]+)/)
+            let match = line.match(/v\s+([0-9.e-]+)\s+([0-9.e-]+)\s+([0-9.e-]+)(\s+([0-9.e-]+)\s+([0-9.e-]+)\s+([0-9.e-]+))?/)
             vertices.push([+match[1], +match[2], +match[3]])
+            if (match[4]) colors.push([+match[5], +match[6], +match[7]])
 		} else if (line.substring(0,1) == "f") {
 			let face = []
             let fn = [] // vertices for face normal calculation
@@ -2260,6 +2255,8 @@ function geomFromOBJ(objcode, options) {
 					id = indexcount;
 					let v = vertices[(+V)-1]
                     gvertices.push(v[0], v[1], v[2])
+                    let c = colors[(+V)-1]
+                    if (c) gcolors.push(c[0], c[1], c[2], 1)
                     if (T && texCoords.length) {
                         let vt = texCoords[(+T)-1]
                         gtexCoords.push(vt[0], vt[1])
@@ -2319,6 +2316,7 @@ function geomFromOBJ(objcode, options) {
 	if (gindices.length) {
         geom.indices = new Uint32Array(gindices)
     }
+    if (gcolors.length) geom.colors = new Float32Array(gcolors)
 	return geom
 }
 
@@ -2326,39 +2324,61 @@ function geomToOBJ(geom) {
     /*
         geom could have 2 or 3 vertexComponents
         must have .vertices, might have normals, texCoords, probably has indices
+        if we have .colors, append to vertices (xyzrgb)
 
     */
-    let { vertexComponents, vertices, normals, texCoords, indices } = geom
-    console.log(geom)
+    let { vertexComponents, vertices, normals, texCoords, indices, colors } = geom
     let lines = []
     let numverts = vertices.length / vertexComponents
     // for each vertex... 
     for (let i=0; i<vertices.length; i+= vertexComponents) {
-        let vs = Array.from(vertices.slice(i, i+vertexComponents))
-        .map(s => Number(s))
+        let vs = Array.from(vertices.slice(i, i+vertexComponents)).map(s => Number(s))
+        if (colors) {
+            vs = vs.concat(Array.from(colors.slice(i*4/vertexComponents, i*4/vertexComponents+3)).map(s => Number(s)))
+        }
         lines.push(`v ${vs.join(" ")}`)
     }
 
     for (let i=0; i<texCoords.length; i+= 2) {
-        let vs = Array.from(texCoords.slice(i, i+2))
-        .map(s => Number(s))
+        let vs = Array.from(texCoords.slice(i, i+2)).map(s => Number(s))
         lines.push(`vt ${vs.join(" ")}`)
     }
 
     for (let i=0; i<normals.length; i+= 3) {
-        let vs = Array.from(normals.slice(i, i+3))
-        .map(s => Number(s))
+        let vs = Array.from(normals.slice(i, i+3)).map(s => Number(s))
         lines.push(`vn ${vs.join(" ")}`)
     }
 
     for (let i=0; i<indices.length; i+=3) {
-        let is = Array.from(indices.slice(i, i+3))
-        .map(s => Number(s) + 1)
-        .map(n => `${n}/${n}/${n}`)
+        let is = Array.from(indices.slice(i, i+3)).map(s => Number(s) + 1).map(n => `${n}/${n}/${n}`)
         lines.push(`f ${is.join(" ")}`)
     }
 
     return lines.join("\n")
+}
+
+function geomAddColors(geom) {
+    let vc = geom.vertexComponents || 3
+    let numverts = geom.vertices.length / vc
+    geom.colors = new Float32Array(4 * numverts)
+    return geom
+}
+
+function geomSetAllNormals(geom, normal) {
+    let vc = geom.vertexComponents || 3
+    let numverts = geom.vertices.length / vc
+    let normals = geom.normals
+    if (!geom.normals) {
+        // create:
+        normals = new Float32Array(numverts * 3)
+        geom.normals = normals
+    }
+    for (let i=0; i<normals.length; i+= 3) {
+        normals[i+0] = normal[0]
+        normals[i+1] = normal[1]
+        normals[i+2] = normal[2]
+    }
+    return geom
 }
 
 // m4 should be a mat4
@@ -2419,7 +2439,7 @@ function geomAppend(self, other) {
         }
         self.indices = ar;
     }
-    for (let k of ["vertices", "normals", "texCoords"]) {
+    for (let k of ["vertices", "normals", "texCoords", "colors"]) {
         if (self[k] && other[k]) {
             const ar = new Float32Array(self[k].length + other[k].length)
             ar.set(self[k])
@@ -2672,6 +2692,8 @@ module.exports = {
     geomAppend,
     geomTransform,
     geomTexTransform,
+    geomSetAllNormals,
+    geomAddColors,
 
 	quat_rotate,
     quat_unrotate,

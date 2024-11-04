@@ -88,6 +88,7 @@ class Window {
 
 	pointer = {
 		pos: [0.5, 0.5],
+		vel: [0, 0],
 		// up(0) or down(1) for three mouse buttons:
 		buttons: [0, 0, 0]
 	};
@@ -151,8 +152,12 @@ class Window {
 
 		glfw.setCursorPosCallback(this.window, (window, px, py) => {
 			let dim = glfw.getWindowSize(window)
-			this.pointer.pos[0] = px/dim[0]
-			this.pointer.pos[1] = py/dim[1]
+			let sx = px/dim[0]
+			let sy = py/dim[1]
+			this.pointer.vel[0] = sx - this.pointer.pos[0]
+			this.pointer.vel[1] = sy - this.pointer.pos[1]
+			this.pointer.pos[0] = sx
+			this.pointer.pos[1] = sy
 
 			if (this.onpointermove) this.onpointermove(2*px/dim[0] - 1, -2*py/dim[1] + 1);
 		})
