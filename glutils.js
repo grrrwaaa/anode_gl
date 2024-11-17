@@ -94,6 +94,14 @@ function makeProgram(gl, vertexCode, fragmentCode, name="") {
 			return this; 
 		},
 
+        uniformsFrom(src) {
+            for (let k of Object.keys(this.uniforms)) {
+                let v = src[k]
+                if (v !== undefined) this.uniform(k, v)
+            }
+            return this;
+        },
+
         dispose() {
             gl.deleteProgram(this.id)
         },
