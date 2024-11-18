@@ -90,7 +90,8 @@ class Window {
 		pos: [0.5, 0.5],
 		vel: [0, 0],
 		// up(0) or down(1) for three mouse buttons:
-		buttons: [0, 0, 0]
+		buttons: [0, 0, 0],
+		scroll: [0, 0],
 	};
 
 	static syncfps = 0;
@@ -170,6 +171,7 @@ class Window {
 			if (this.onpointerbutton) this.onpointerbutton(button, action, mods)
 		});
 		glfw.setScrollCallback(this.window, (window, dx, dy) => {
+			this.pointer.scroll = [dx, dy]
 			if (this.onpointerscroll) this.onpointerscroll(dy, dx);
 		})
 		
@@ -226,6 +228,8 @@ class Window {
 		glfw.swapBuffers(this.window);
 
 		this.frame++;
+		
+		this.pointer.scroll = [0, 0]
 	}
 
 	get dim() {
