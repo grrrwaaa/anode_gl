@@ -97,7 +97,7 @@ class Window {
 	static syncfps = 0;
 	static all = new Set()
 
-	constructor(options={}) {
+	constructor(options = {}) {
 		Object.assign(this, options)
 
 		this.title = this.title || `anode${Window.all.size}`

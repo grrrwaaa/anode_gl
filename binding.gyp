@@ -10,15 +10,17 @@
       'conditions': [
         ['OS=="mac"',
           {
+            'include_dirs': [
+              '/opt/homebrew/Cellar/glew/2.2.0_1/include',
+              '/opt/homebrew/Cellar/glfw/3.3.9/include'
+            ],
+            'library_dirs': [
+              '/opt/homebrew/Cellar/GLEW/2.2.0_1/lib',
+              '/opt/homebrew/Cellar/glfw/3.3.9/lib'
+            ],
             'libraries': [
               '-lGLEW',
               '-framework OpenGL'
-            ],
-            'include_dirs': [
-              './node_modules/native-graphics-deps/include'
-            ],
-            'library_dirs': [
-              '../node_modules/native-graphics-deps/lib/macos/glew'
             ],
             'xcode_settings': {
               'MACOSX_DEPLOYMENT_TARGET': '10.13',
@@ -80,14 +82,15 @@
       'conditions': [
         ['OS=="mac"',
           {
-            'libraries': [
-              '-framework Cocoa',
-              '../node_modules/native-graphics-deps/lib/macos/glfw/libglfw3.a'
-            ],
             'include_dirs': [
-              './node_modules/native-graphics-deps/include'
+              '/opt/homebrew/Cellar/glfw/3.3.9/include'
             ],
             'library_dirs': [
+              '/opt/homebrew/Cellar/glfw/3.3.9/lib'
+            ],
+            'libraries': [
+              '-framework Cocoa',
+              '-lglfw'
             ],
             'xcode_settings': {
               'MACOSX_DEPLOYMENT_TARGET': '10.13',
