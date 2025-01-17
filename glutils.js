@@ -423,7 +423,8 @@ function img2tex(gl, filepath, options) {
         wrap: gl.CLAMP_TO_EDGE,
         // typically, LINEAR_MIPMAP_LINEAR if mipmap = true
         // LINEAR or NEAREST if not
-        filter: gl.LINEAR_MIPMAP_LINEAR,
+        minfilter: gl.LINEAR_MIPMAP_LINEAR,
+        magfilter: gl.LINEAR,
         // can also set specific options:
         // minfilter: gl.LINEAR_MIPMAP_LINEAR,
         // magfilter: gl.LINEAR_MIPMAP_LINEAR,
@@ -540,7 +541,6 @@ function createPixelTexture(gl, width, height, floatingpoint=false) {
             let internalFormat = floatingpoint ? gl.RGBA32F : gl.RGBA;   // format we want in the texture
             // gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_BASE_LEVEL, 0);
             // gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAX_LEVEL, miplevels-1);
-            gl.texParameteri(gl.TEXTURE_2D, gl.GENERATE_MIPMAP, gl.TRUE); 
             //gl.texParameterf(gl.TEXTURE_2D, gl.TEXTURE_MAX_ANISOTROPY, 2.0);
             if (miplevels > 1) {
                 gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
@@ -615,7 +615,7 @@ function createPixelTexture(gl, width, height, floatingpoint=false) {
 }
 
 function createTexture3D(gl, opt={}) {
-    const isFloat = !!opt.float;//&& EXT_color_buffer_float;
+    const isFloat = !!opt.float || !!opt.isFloat;//&& EXT_color_buffer_float;
     const channels = opt.channels || 4; // RGBA
     const width = opt.width || 16;
     const height = opt.height || width;
@@ -663,6 +663,10 @@ function createTexture3D(gl, opt={}) {
         filter_min: opt.filter_min || opt.filter || gl.LINEAR,
         filter_mag: opt.filter_mag || opt.filter || gl.LINEAR,
         internalFormat: internalFormat,  // type of data we are supplying,
+
+        clone() {
+            return createTexture3D(gl, opt=this)
+        },
         
         // allocate local data
         allocate() {
@@ -963,7 +967,7 @@ function makeGbuffer(gl, width=1024, height=1024, config=[
             if (cfg.mipmap) gl.generateMipmap(gl.TEXTURE_2D); 
 			// set the filtering so we don't need mips
 			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, (cfg.mipmap) ? gl.LINEAR_MIPMAP_LINEAR : gl.LINEAR);
-			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, (cfg.mipmap) ? gl.LINEAR_MIPMAP_LINEAR : gl.LINEAR);
+			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
 			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, wrap);
 			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, wrap);
 			gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0+i, gl.TEXTURE_2D, tex, 0);

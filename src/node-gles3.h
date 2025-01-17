@@ -363,7 +363,7 @@ napi_value GetTexImage(napi_env env, napi_callback_info info) {
 	status = getTypedArray(env, args[4], *(void **)&data);
 	if (status != napi_ok) return nullptr;
 	// void glGetTexImage(	GLenum target, GLint level, GLenum format, GLenum type, void * pixels);
-	//glGetTexImage(target, level, format, type, data);
+	glGetTexImage(target, level, format, type, data);
 	return args[4];
 }
 
