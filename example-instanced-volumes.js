@@ -108,21 +108,25 @@ let viewmatrix_prev = mat4.create()
 let projmatrix_prev = mat4.create()
 
 window.draw = function() {
-	let { t, dt, dim } = this;
+	let { t, dt, frame, dim } = this;
 	let aspect = dim[0]/dim[1]
 
 	let test = ((Math.floor(t) % 2) == 1) ? 1 : 0
 	let showflow = 0 //((Math.floor(t/6) % 3) == 2) ? 1 : 0
 
-	tex3d.data.forEach((v,i,a) => {
-		a[i] *= Math.exp(-dt*2.)
+	if (frame % 30 == 0) {
+		tex3d.data.forEach((v,i,a) => {
+			a[i] *= Math.exp(-dt*2.)
 
-		let b = i/(N*N*N) * 4.54 + t
+			let b = i/(N*N*N) * 4.54 + t
 
-		a[i] += dt*(Math.random()- 0.25)
-	}) 
-	
-	tex3d.bind().submit()
+			a[i] += dt*(Math.random()- 0.25)
+
+			a[i] = Math.random() - 0.5
+		}) 
+		
+		tex3d.bind().submit()
+	}
 
 	let center = cubes.instances[0].i_pos
 	let q = [0.5, 0.1, 0, 0]
@@ -222,6 +226,10 @@ window.draw = function() {
 
 	mat4.copy(viewmatrix_prev, viewmatrix)
 	mat4.copy(projmatrix_prev, projmatrix)
+
+	if (Math.floor(t+dt) > Math.floor(t)) {
+		console.log("fps", 1/dt)
+	}
 }
 
 Window.syncfps = 30;

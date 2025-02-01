@@ -92,16 +92,28 @@ class Shaderman extends events.EventEmitter {
 
 		this.addDependency(computepath, args)
 
-		// apply #include rules:
-		const replacer = (match, filepath) => {
-			filepath = path.join(this.folder, filepath)
-			if (fs.existsSync(filepath)) {
-				this.addDependency(filepath, args)
-				return "\n"+fs.readFileSync(filepath, "utf-8")+"\n"
-			}
-			return "\n"
+		const preprocessor = (code, folder) => {
+			// TODO: handle #ifndefs
+			code = code.replace(/#include\s+["']([^"']+)["']/g, (match, filepath) => {
+				// make path absolute:
+				filepath = path.join(folder, filepath)
+				// did we already add this dependency?
+				//console.log(filepath, this.hasDependency(filepath))
+				//if (!this.hasDependency(filepath)) {
+					// extract subpath:
+					let subpath = path.dirname(filepath)
+					if (fs.existsSync(filepath)) {
+						this.addDependency(filepath, args)
+						let subcode = preprocessor(fs.readFileSync(filepath, "utf-8"), subpath)
+						return "\n"+subcode+"\n"
+					}
+				//}
+				return "// filepath \n"
+			});
+			return code
 		}
-		computecode = computecode.replace(/#include\s+["']([^"']+)["']/g, replacer);
+
+		computecode = preprocessor(computecode, this.folder)
 
 		let program = glutils.makeComputeProgram(gl, computecode, name)
 		this.computes[name] = program
@@ -125,6 +137,10 @@ class Shaderman extends events.EventEmitter {
 		let deps = this.dependencies[filepath] || {}
 		deps[args] = true
 		this.dependencies[filepath] = deps
+	}
+
+	hasDependency(filepath) {
+		return !!this.dependencies[filepath]
 	}
 
 	watch(gl) {

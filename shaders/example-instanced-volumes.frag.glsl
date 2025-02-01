@@ -2,6 +2,7 @@
 #include "math.glsl"
 #include "hash.glsl"
 #include "hg_sdf.glsl"
+
 precision mediump float;
 
 uniform sampler3D u_volume_tex;
@@ -253,7 +254,7 @@ void main() {
 		out_color *= vec4(pow(abs(dot(rd, n)), 0.95));
 
     } else {
-        //discard;
+        discard;
         out_color = vec4(0.2);
     }
 

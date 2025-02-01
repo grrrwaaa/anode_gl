@@ -170,14 +170,10 @@ function uniformsFromCode(gl, program, code, uniforms = {}) {
         let setter;
         switch (type) {
             case "mat4": 
-                setter = (m, transpose=false) => gl.uniformMatrix4fv(location, transpose, m); 
-                break;
             case "mat3": 
-                setter = (m, transpose=false) => gl.uniformMatrix3fv(location, transpose, m); 
-                break;
             case "mat2": 
-                setter = (m, transpose=false) => gl.uniformMatrix2fv(location, transpose, m); 
-                break;
+                setter = (m, transpose=false) => ArrayBuffer.isView(m) ? gl.uniformMatrix4fv(location, transpose, m) : gl.uniformMatrix4fv(location, transpose, new Float32Array(m));
+            break;
             case "vec4": 
                 setter = (x, y, z, w) => isArrayOrTypedArray(x) ? gl.uniform4f(location, x[0], x[1], x[2], x[3]) : gl.uniform4f(location, x, y, z, w); 
                 break;
@@ -1055,16 +1051,30 @@ function makeGbuffer(gl, width=1024, height=1024, config=[
             return this;
         },
 
-        // reads the GPU memory back into this.data
-        getData(attachment = 0) {
+        allocate(attachment=0) {
             const cfg = this.config[attachment]
             if (cfg.float) {
                 if (!this.data[attachment]) this.data[attachment] = new Float32Array(this.width * this.height * 4);
             } else {
                 if (!this.data[attachment]) this.data[attachment] = new Uint8Array(this.width * this.height * 4);
             }
+            return this;
+        },
+
+        allocateAll() {
+            for (let attachment=0; attachment < config.length; attachment++) {
+                this.allocate(attachment);
+            }
+            return this;
+        },
+
+        // reads the GPU memory back into this.data
+        getData(attachment = 0) {
+            this.allocate(attachment)
+            const cfg = this.config[attachment]
             gl.bindTexture(gl.TEXTURE_2D, this.textures[attachment])
             gl.getTexImage(gl.TEXTURE_2D, 0, cfg.format, cfg.type, this.data[attachment]);
+            return this;
         },
         
         // reads the GPU memory back into this.data
@@ -1126,6 +1136,17 @@ function makeGbufferPair(gl, width=1024, height=1024, config=[
         // must bind first
         submit() {
             this.readbuffer.submit(...arguments)
+            return this
+        },
+
+        allocate() { 
+            this.readbuffer.allocate(...arguments)
+            this.writebuffer.allocate(...arguments)
+            return this
+        },
+        allocateAll() { 
+            this.readbuffer.allocateAll(...arguments)
+            this.writebuffer.allocateAll(...arguments)
             return this
         },
 
