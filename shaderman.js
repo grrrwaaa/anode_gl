@@ -63,17 +63,41 @@ class Shaderman extends events.EventEmitter {
 		this.addDependency(vertpath, args)
 		this.addDependency(fragpath, args)
 
-		// apply #include rules:
-		const replacer = (match, filepath) => {
-			filepath = path.join(this.folder, filepath)
-			if (fs.existsSync(filepath)) {
-				this.addDependency(filepath, args)
-				return "\n"+fs.readFileSync(filepath, "utf-8")+"\n"
-			}
-			return "\n"
+		const preprocessor = (code, folder) => {
+			// TODO: handle #ifndefs
+			code = code.replace(/#include\s+["']([^"']+)["']/g, (match, filepath) => {
+				// make path absolute:
+				filepath = path.join(folder, filepath)
+				// did we already add this dependency?
+				//console.log(filepath, this.hasDependency(filepath))
+				//if (!this.hasDependency(filepath)) {
+					// extract subpath:
+					let subpath = path.dirname(filepath)
+					if (fs.existsSync(filepath)) {
+						this.addDependency(filepath, args)
+						let subcode = preprocessor(fs.readFileSync(filepath, "utf-8"), subpath)
+						return "\n"+subcode+"\n"
+					}
+				//}
+				return "// filepath \n"
+			});
+			return code
 		}
-		vertcode = vertcode.replace(/#include\s+["']([^"']+)["']/g, replacer);
-		fragcode = fragcode.replace(/#include\s+["']([^"']+)["']/g, replacer);
+
+		vertcode = preprocessor(vertcode, this.folder)
+		fragcode = preprocessor(fragcode, this.folder)
+
+		// // apply #include rules:
+		// const replacer = (match, filepath) => {
+		// 	filepath = path.join(this.folder, filepath)
+		// 	if (fs.existsSync(filepath)) {
+		// 		this.addDependency(filepath, args)
+		// 		return "\n"+fs.readFileSync(filepath, "utf-8")+"\n"
+		// 	}
+		// 	return "\n"
+		// }
+		// vertcode = vertcode.replace(/#include\s+["']([^"']+)["']/g, replacer);
+		// fragcode = fragcode.replace(/#include\s+["']([^"']+)["']/g, replacer);
 
 		//console.log("fragcode", fragcode)
 
