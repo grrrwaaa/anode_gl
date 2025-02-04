@@ -87,20 +87,6 @@ class Shaderman extends events.EventEmitter {
 		vertcode = preprocessor(vertcode, this.folder)
 		fragcode = preprocessor(fragcode, this.folder)
 
-		// // apply #include rules:
-		// const replacer = (match, filepath) => {
-		// 	filepath = path.join(this.folder, filepath)
-		// 	if (fs.existsSync(filepath)) {
-		// 		this.addDependency(filepath, args)
-		// 		return "\n"+fs.readFileSync(filepath, "utf-8")+"\n"
-		// 	}
-		// 	return "\n"
-		// }
-		// vertcode = vertcode.replace(/#include\s+["']([^"']+)["']/g, replacer);
-		// fragcode = fragcode.replace(/#include\s+["']([^"']+)["']/g, replacer);
-
-		//console.log("fragcode", fragcode)
-
 		let program = glutils.makeProgram(gl, vertcode, fragcode, name)
 		this.shaders[name] = program
 		return program
