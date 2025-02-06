@@ -1738,6 +1738,11 @@ function createInstances(gl, fields, count=0) {
 			gl.bufferData(gl.ARRAY_BUFFER, this.data, gl.DYNAMIC_DRAW);
 			return this;
 		},
+        
+        // bind first:
+        getData() {
+            gl.getBufferData(gl.ARRAY_BUFFER, this.data)
+        },
 
 		unbind() {
 			gl.bindBuffer(gl.ARRAY_BUFFER, null);
@@ -1748,7 +1753,7 @@ function createInstances(gl, fields, count=0) {
 			vao.bind().setAttributes(this.id, this.bytestride, this.fields, instanced).unbind();
 			return this;
 		},
-
+        
         dispose() {
             gl.deleteBuffers(this.id)
         },

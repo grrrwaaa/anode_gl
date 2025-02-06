@@ -71,7 +71,8 @@ window.draw = function() {
 	if (Math.floor(t+dt)>Math.floor(t)) {
 		
 		//gl.getBufferData(gl.ARRAY_BUFFER, cubes.data)
-		gl.getBufferSubData(gl.ARRAY_BUFFER, 0, cubes.data.byteLength, cubes.data)	
+		//gl.getBufferSubData(gl.ARRAY_BUFFER, 0, cubes.data.byteLength, cubes.data)	
+		cubes.bind().getData()
 		console.log(new Float32Array(cubes.data))
 	}
 
