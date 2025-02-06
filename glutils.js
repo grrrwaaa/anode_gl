@@ -89,15 +89,31 @@ function makeProgram(gl, vertexCode, fragmentCode, name="") {
 		id: program,
 		begin: function() { gl.useProgram(this.id); return this; },
 		end: function() { gl.useProgram(0); return this; },
-		uniform: function(name, x, y, z, w) {
-			uniforms[name].set(x, y, z, w);
-			return this; 
-		},
+		// uniform: function(name, x, y, z, w) {
+		// 	uniforms[name].set(x, y, z, w);
+		// 	return this; 
+		// },
+        uniform: function(k, ...args) {
+            let setter = uniforms[k]
+            if (!setter) {
+                console.error("uniform not found", k, name)
+            } else {
+                setter.set.apply(this, args);
+            }
+            return this;
+        },
 
         uniformsFrom(src) {
             for (let k of Object.keys(this.uniforms)) {
                 let v = src[k]
                 if (v !== undefined) this.uniform(k, v)
+            }
+            return this;
+        },
+
+        setuniforms(dict) {
+            for (let k in dict) {
+                if (this.uniforms[k]) this.uniform(k, dict[k])
             }
             return this;
         },
@@ -1759,14 +1775,19 @@ void main() {
         uniforms: uniformsFromCode(gl, program, vertCode + fragCode),
 
         uniform(name, ...args) {
-            this.uniforms[name].set.apply(this, args);
+            let setter = this.uniforms[name]
+            if (!setter) {
+                console.error("uniform not found", name, this)
+            }
+            setter.set.apply(this, args);
             return this;
         },
 
         setuniforms(dict) {
             this.use();
             for (let k in dict) {
-                this.uniforms[k].set.apply(this, dict[k]);
+                //this.uniforms[k].set.apply(this, dict[k]);
+                this.uniform(k, dict[k])
             }
             return this;
         },

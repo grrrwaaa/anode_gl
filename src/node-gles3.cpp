@@ -13156,6 +13156,8 @@ napi_value init(napi_env env, napi_value exports) {
 		{ "getErrorString", 0, GetErrorString, 0, 0, 0, napi_default, 0 },
 		{ "clearBufferfv", 0, ClearBufferfv, 0, 0, 0, napi_default, 0 },
 		{ "bufferData", 0, BufferData, 0, 0, 0, napi_default, 0 },
+		{ "getBufferData", 0, GetBufferData, 0, 0, 0, napi_default, 0 },
+		{ "getBufferSubData", 0, GetBufferSubData, 0, 0, 0, napi_default, 0 },
 		{ "createBuffer", 0, CreateBuffer, 0, 0, 0, napi_default, 0 },
 		{ "deleteBuffers", 0, DeleteBuffers, 0, 0, 0, napi_default, 0 },
 		{ "createFramebuffer", 0, CreateFramebuffer, 0, 0, 0, napi_default, 0 },
@@ -14236,7 +14238,7 @@ napi_value init(napi_env env, napi_value exports) {
 		{ "replacementCodeusvSUN", 0, ReplacementCodeusvSUN, 0, 0, 0, napi_default, 0 },
 		{ "addSwapHintRectWIN", 0, AddSwapHintRectWIN, 0, 0, 0, napi_default, 0 }
 	};
-	status = napi_define_properties(env, exports, 1084, properties);
+	status = napi_define_properties(env, exports, 1086, properties);
 	//assert(status == napi_ok);
 	return exports;
 }

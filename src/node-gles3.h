@@ -122,6 +122,42 @@ napi_value BufferData(napi_env env, napi_callback_info info) {
 	return nullptr;
 }
 
+// target enum (e.g. GL_ARRAY_BUFFER), databuffer (void * arraybuffer)
+
+napi_value GetBufferData(napi_env env, napi_callback_info info) {
+	napi_status status = napi_ok;
+	napi_value args[2];
+	size_t argc = checkArgCount(env, info, args, 2, 2);
+	GLenum target = getUint32(env, args[0]);
+//	GLintptr offset = getUint32(env, args[1]);
+//	GLsizeiptr size = getUint32(env, args[2]);
+
+	void * data;
+	size_t size;
+	getPointerAndSize(env, args[1], data, size);
+
+	glGetBufferSubData(target, 0, size, data);
+	//return (status == napi_ok) ? result_value : nullptr;
+	return args[1];
+}
+
+napi_value GetBufferSubData(napi_env env, napi_callback_info info) {
+	napi_status status = napi_ok;
+	napi_value args[4];
+	size_t argc = checkArgCount(env, info, args, 4, 4);
+	GLenum target = getUint32(env, args[0]);
+	GLintptr offset = getUint32(env, args[1]);
+	GLsizeiptr size = getUint32(env, args[2]);
+
+	void * data;
+	size_t s;
+	getPointerAndSize(env, args[3], data, s);
+
+	glGetBufferSubData(target, offset, size, data);
+	//return (status == napi_ok) ? result_value : nullptr;
+	return args[3];
+}
+
 napi_value CreateBuffer(napi_env env, napi_callback_info info) {
 	napi_status status = napi_ok;
 	GLuint result;

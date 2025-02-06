@@ -41,7 +41,7 @@ cubes.instances.forEach(obj => {
 })
 cubes.bind().submit().unbind();
 
-//console.log(cubes)
+console.log(cubes)
 
 // attach these instances to an existing VAO:
 cubes.attachTo(cube_vao);
@@ -66,6 +66,14 @@ window.draw = function() {
 	gl.dispatchCompute(NUM_INSTANCES, 1, 1);
 	// make sure buffer writing has finished before we use it
 	gl.memoryBarrier(gl.SHADER_STORAGE_BARRIER_BIT);
+
+	// if you want to pull them back to CPU:
+	if (Math.floor(t+dt)>Math.floor(t)) {
+		
+		//gl.getBufferData(gl.ARRAY_BUFFER, cubes.data)
+		gl.getBufferSubData(gl.ARRAY_BUFFER, 0, cubes.data.byteLength, cubes.data)	
+		console.log(new Float32Array(cubes.data))
+	}
 
 
 	// Compute the matrix
