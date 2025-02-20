@@ -31,8 +31,12 @@
           }
         ],
         ['OS=="linux"', {
-          'libraries': [
-            '-lGLEW','-lGL']
+            'include_dirs': [
+              '/usr/include'
+            ],
+            'libraries': [ '-lGLU', '-lGL', '-lGLEW'],
+            "cflags": ["-Wno-unused-variable -Wno-maybe-uninitialized]"],
+
           }
         ],
         ['OS=="win"',
@@ -101,7 +105,7 @@
           }
         ],
         ['OS=="linux"', {
-          'libraries': []
+          'libraries': [ '-lglfw', '-lGLU', '-lGL', '-lGLEW']
           }
         ],
         ['OS=="win"',

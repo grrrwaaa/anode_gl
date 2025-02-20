@@ -133,8 +133,8 @@ void main() {
 	//p = cnoise(pos * 4.); // classic perlin noise
 	value = vec4(p);
 
-	value = noised(pos * 4.); // value noise;  .yzw is the gradient
-	value = mix(value, noised(pos * 20.), 0.8*min(0., value.z*value.w));
+//	value = noised(pos * 4.); // value noise;  .yzw is the gradient
+//	value = mix(value, noised(pos * 20.), 0.8*min(0., value.z*value.w));
 	
     imageStore(img_out, voxel_coord, vec4(value));
 }

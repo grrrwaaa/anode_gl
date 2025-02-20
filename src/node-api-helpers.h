@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h> // calloc
 #include <string>
+#include <cstring>
 #include <assert.h>
 
 size_t checkArgCount(napi_env env, napi_callback_info info, napi_value * args, size_t max, size_t min=0) {

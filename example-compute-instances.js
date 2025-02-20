@@ -73,7 +73,7 @@ window.draw = function() {
 		//gl.getBufferData(gl.ARRAY_BUFFER, cubes.data)
 		//gl.getBufferSubData(gl.ARRAY_BUFFER, 0, cubes.data.byteLength, cubes.data)	
 		cubes.bind().getData()
-		console.log(new Float32Array(cubes.data))
+		//console.log(new Float32Array(cubes.data))
 	}
 
 
@@ -119,5 +119,5 @@ window.draw = function() {
 	if (Math.floor(t+dt) > Math.floor(t)) console.log("fps", 1/dt)
 }
 
-Window.syncfps = 60
+//Window.syncfps = 60
 Window.animate()
