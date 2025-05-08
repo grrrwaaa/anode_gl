@@ -2482,6 +2482,37 @@ function geomTexTransform(geom, m3) {
     return geom
 }
 
+function geomMergeTwo(A, B) {
+    assert(!!A.indices === !!B.indices, "can't merge geometries if only one of them uses indices")
+    assert(!!A.normals === !!B.normals, "can't merge geometries if only one of them uses normals")
+    assert(!!A.texCoords === !!B.texCoords, "can't merge geometries if only one of them uses texCoords")
+    assert(A.vertexComponents === B.vertexComponents, "can't merge if the vertex components don't match")
+    
+    let C = {
+        vertexComponents: A.vertexComponents,
+    }
+
+    // indicies are a special case:
+    if (A.indices) {
+        const ni = A.indices.length
+        const offset = A.vertices.length/A.vertexComponents;
+        C.indices = new Uint32Array(A.indices.length + B.indices.length)
+        C.indices.set(A.indices)
+        for (let i=0; i<B.indices.length; i++) {
+            C.indices[ni + i] = B.indices[i] + offset
+        }
+    }
+    for (let k of ["vertices", "normals", "texCoords", "colors"]) {
+        if (A[k] && B[k]) {
+            C[k] = new Float32Array(A[k].length + B[k].length)
+            C[k].set(A[k])
+            C[k].set(B[k], A[k].length)
+        }
+    }
+    return C;
+}
+
+
 // merge another geom into self:
 function geomAppend(self, other) {
     assert(!!self.indices === !!other.indices, "can't merge geometries if only one of them uses indices")
@@ -2509,6 +2540,19 @@ function geomAppend(self, other) {
 
     
     return self;
+}
+
+// merge a list of geoms:
+function geomMerge(...geoms) {
+    geoms = geoms.flat()
+    if (geoms.length < 2) return geoms[0]
+
+    let result = geomMergeTwo(geoms.shift(), geoms.shift())
+    while (geoms.length) {
+        geomAppend(result, geoms.shift())
+    }
+    
+    return result;
 }
 
 // get the rotation that will turn `q` 
@@ -2749,6 +2793,7 @@ module.exports = {
     geomFromOBJ,
     geomToOBJ,
     geomAppend,
+    geomMerge,
     geomTransform,
     geomTexTransform,
     geomSetAllNormals,
