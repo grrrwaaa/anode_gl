@@ -27,5 +27,11 @@
   "bugs": {
     "url": "https://github.com/grrrwaaa/anode_gl/issues"
   },
-  "homepage": "https://github.com/grrrwaaa/anode_gl#readme"
+  "homepage": "https://github.com/grrrwaaa/anode_gl#readme",
+  "nodemonConfig": {
+    "ignore": [
+      "*.json"
+    ],
+    "signal": "SIGINT"
+  }
 }
